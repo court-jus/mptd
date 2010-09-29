@@ -1,0 +1,49 @@
+Principe tower defense mais multijoueur
+
+chaque joueur doit s'occuper de sa d�fense et de g�n�rer des cr�atures pour attaquer l'adversaire
+
+IDEES :
+- science :
+    - radio (espionnage) : tout badguy qui atteint le chateau envoie à l'attaquant qui l'a lancé des informations sur le défenseur (si trop dur, on peut envoyer des informations dans tous les cas mais envoyer plus d'infos si on s'est rapproché du chateau)
+    - ingénierie : possibilité d'upgrader une tourelle et qu'elle continue à tirer (plus le niveau d'ingénierie est élevé, plus le niveau des tourelles ayant cette possibilité est élevé (par exemple : ingénierie niveau 2 : permet d'upgrader les tourelles d'un niveau inférieur ou égal à 2 et que celles-ci continuent à tirer))
+    - génie civil : augmenter la vitesse de construction/amélioration des tourelles
+- acheter une entrée supplémentaire chez l'adversaire
+- upgrades du type "la prochaine vague" :
+    - parachutage : tous les BG de la prochaine vague sont "parachutés" au hasard sur la map. Si ils tombent sur une tourelle, forcément, il feront kamikaze. Il faut que cette option soit assez chère
+    - random kamikaze : à un moment quelconque, ils explosent :)
+
+TODO :
+- optimisation
+- sur les boutons, afficher aussi le temps que va prendre l'action
+- sur les entrées : ce que j'ai fait ne marchera pas en réseau
+
+OK :
+- gestion des vagues :
+    - couleurs
+    - quand une vague arrive, envoyer les infos dans self.wave (modifier send_badguys et creer un send_wave)
+    - puis quand une vague est finie, lancer la suivante (modifier send_badguys)
+- gagner plus de pognon
+  - gagner du pognon sur la duree de vie des mechants (quand ils sont morts, ils envoient un message au joueur avec leur durée de vie)
+  - plus de niveaux à la brouzouf tw
+  - la brouzouf tw fait gagner plus de pognon
+- voir les vies de l'adversaire
+- techno économie (finalement fait avec une tourelle spéciale) : permet de gagner des sous (niveaux upgradables)
+- possibilit� revendre badguys produits (surtout pour le jeu solo)
+- envoyer automatiquement les BG qui sont prêt (toutes les minutes, si au moins 20 BG sont prêts)
+- refaire les prix d'upgrade du donjon
+- debuguer le soucis de l'affichage des niveaux suivant des tours
+- pouvoir revendre les tourelles
+- améliorer le code du déplacement des BG pour le faire par rapport aux secondes et non pas à la boucle cpu_tick (en ms peut être meme)
+- voir le fichier Capture �cran pour dessiner la grille sur background
+- authentification subversion
+- optimisation :
+  - sortir l'affichage (clear + draw) de la boucle cpu_tick
+  - pour le calcul : voir � r�utiliser des chemins d�j� calcul�s (en particulier pour les BG qui d�marrent)
+- calcul des chemins pour les badguys bloqu�s avant ceux qui d�marrent (vu que ceux qui d�marrent ont un chemin tout pr�t)
+- gestion du clic sur le chateau pour les informations et les constructions (upgrade des badguys) -> fait diff�remment avec un menu de boutons en bas
+- menu du bas
+- masque du curseur tourelle
+- upgrades des BG:
+    - vie : au départ, valeurs fixes (10, 20, 30, 50, 75, 100, 150, 200) puis multiplicateur de la vague précédente (*1.1, *1.2 ... indéfiniment)
+    - vitesse
+    - vitesse de construction
