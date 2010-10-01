@@ -4,6 +4,8 @@ import pygame.font
 from pygame.locals import *
 import objects
 
+from livewires import games
+
 PATHNAME=os.path.dirname(sys.argv[0])
 FULLPATH=os.path.abspath(PATHNAME)
 DATAPATH=os.path.join(FULLPATH,"data/")
@@ -82,7 +84,7 @@ class bouton(pygame.sprite.Sprite):
             h+=height
         self.dm.need_update = True
         
-class bouton_menu:
+class bouton_menu(games.Object):
     # (35,684)(104,684)
     y = 0
     

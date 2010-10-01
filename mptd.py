@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import castle, calcul_dij
 import pygame_dm, cm, nm
 import pygame
@@ -8,6 +9,7 @@ import AStar
 import menu
 import shelve
 from pygame.locals import *
+from livewires import games
 
 ECART_MIN_ENTRE_BG = 150    # ms between two badguys
 ECART_MIN_ENTRE_VAGUES = 30000    # ms between two forced waves
@@ -16,8 +18,8 @@ TEST = True
 class mptd:
     """ this is the main class for mptd """
 
-    def __init__(self,settings): #serveur_hostname,serveur_port,single_player,fullscreen):
-        pygame.init()
+    def __init__(self, screen, settings): #serveur_hostname,serveur_port,single_player,fullscreen):
+        #pygame.init()
         self.settings = settings # server_ip,server_port,fullscreen,solo
         #print self.settings
         self.mapw       =   80
@@ -41,11 +43,13 @@ class mptd:
         self.current_tower_creation_mode = objects.basic_tower
         self.cm        = cm.cm (self.settings["keys"],self.settings["touches_boutons"])            # create a new control manager
         self.cm.register_game (self)                # register self to cm        
-        self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
+        #self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
+        self.dm = screen
         self.castle = castle.castle(self.cm, self.single_player)
         if self.single_player:
             self.castle.update_boutons_text()
-            self.dm.update_bb(message = "Bienvenue dans le mode solo")
+            print "TODO : update_bb"
+            #self.dm.update_bb(message = "Bienvenue dans le mode solo")
         self.nm = None
         if self.settings["server_ip"] and not self.single_player:
             print "Connecting to serveur",self.settings["server_ip"],"on port",self.settings["server_port"]
@@ -72,6 +76,7 @@ class mptd:
             "special" : None,
             "coord" : (0,0),
             }
+        self.calcul.daemon = True
         self.calcul.start()
         #print self.calcul.starting_path
         self.update_road = False
@@ -115,27 +120,23 @@ class mptd:
                     text += need.name + " "
         return text
 
-    def mainloop(self):
-        self.running = True
-        self.dm.update_bb()
+    def tick(self):
+        #self.dm.update_bb()
 
-        while self.running:
-            now = pygame.time.get_ticks()
-            b = self.castle.has_building(castle.badguy_factory)
-            self.dm.draw()         # draw to screen
-            self.dm.update()        # update sprites (badguys, towers...)
-            self.castle.update()
-            if self.current_wave["number"] > 0 and now > self.last_bg_sent + ECART_MIN_ENTRE_BG:
-                self.last_bg_sent = now
-                self.send_badguys(0,True)
-            elif len(self.waves) > 0:
-                self.current_wave = self.waves.pop(0)
-                self.colors.append(self.colors.pop(0)) # rotation des couleurs
-            if now > self.last_wave_sent + ECART_MIN_ENTRE_VAGUES and b and b.badguys_ready >= 20:
-                self.cm.post(("send_badguys",None))
-            if self.castle.lifes <= 0:
-                self.cm.post(["quit_game",None])
-        print "Game Over"        
+        now = pygame.time.get_ticks()
+        b = self.castle.has_building(castle.badguy_factory)
+        self.dm.update()        # update sprites (badguys, towers...)
+        self.castle.update()
+        if self.current_wave["number"] > 0 and now > self.last_bg_sent + ECART_MIN_ENTRE_BG:
+            self.last_bg_sent = now
+            self.send_badguys(0,True)
+        elif len(self.waves) > 0:
+            self.current_wave = self.waves.pop(0)
+            self.colors.append(self.colors.pop(0)) # rotation des couleurs
+        if now > self.last_wave_sent + ECART_MIN_ENTRE_VAGUES and b and b.badguys_ready >= 20:
+            self.cm.post(("send_badguys",None))
+        if self.castle.lifes <= 0:
+            self.cm.post(["quit_game",None])
         
     def make_road_from_path(self,ASPath):
         road = []
@@ -378,129 +379,3 @@ class mptd:
                 p = x + y * self.mapw
                 self.mapdata[p] = 1
         self.towers.remove(t)
-
-def usage():
-    print """Options :
-    -f          --fullscreen            Fullscreen
-    -1          --one-player            Single player
-    -n          --no-network            No networking (useless)
-    -h          --help                  this help
-    -s          --server                specify the server IP address
-    -p          --port                  specify the port the server is listening on"""
-
-def create_default_config(config_file):
-    s = shelve.open(config_file)
-    settings = {
-        "server_ip"  : "localhost",
-        "server_port": "8524",
-        "fullscreen" : False,
-        "solo"       : True
-        }
-    keys = {
-                "fullscreen":   K_f,
-                "quit"      :   K_ESCAPE,
-                "badguy"    :   K_RETURN,
-                "tower"     :   K_t,
-                "upgrade"   :   K_a,
-                "select"    :   K_SPACE,
-                "sell_tw"   :   K_v,
-                "construction" : K_c,
-                "research" : K_r,
-                "upgrades" : K_m,
-                "special"  : K_s,
-                "bouton1"  : K_F1,
-                "bouton2"  : K_F2,
-                "bouton3"  : K_F3,
-                "bouton4"  : K_F4,
-                "bouton5"  : K_F5,
-                "bouton6"  : K_F6,
-                "bouton7"  : K_F7,
-                "bouton8"  : K_F8,
-                "bouton9"  : K_F9,
-                "bouton10"  : K_F10,
-                "menu_down" : K_DOWN,
-                "menu_up" : K_UP,
-                "menu_select" : K_RETURN,
-                }
-    settings["keys"] = keys
-    settings["touches_boutons"] = [keys[a] for a in keys if a[:6] == "bouton"]
-    s["settings"] = settings
-    s.close()
-
-def main(argv):
-    
-    config_file = "mptd.conf"
-    if not os.path.exists(config_file):
-        create_default_config(config_file)
-    s = shelve.open(config_file)
-    settings = s["settings"]
-    s.close()
-    
-    if not TEST:
-        mainmenu = menu.menu(settings["keys"])
-        optionsmenu = menu.menu(settings["keys"])
-        touchesmenu = menu.menu(settings["keys"])
-        mainmenu.add_item(menu.item("Menu principal",None))
-        mainmenu.add_item(menu.item("Lancer le jeu solo",("solo",None)))
-        mainmenu.add_item(menu.item("Lancer le jeu multijoueur",("multi",None)))
-        mainmenu.add_item(menu.item("Options",("menu",optionsmenu)))
-        mainmenu.add_item(menu.item("Quitter",("quit",None)))
-        
-        optionsmenu.add_item(menu.item("Options",None))
-        optionsmenu.add_item(menu.item("Activer le plein ecran",("toggle fullscreen",settings)))
-        optionsmenu.add_item(menu.item("Changer l'IP du serveur",("input server_ip",settings)))
-        optionsmenu.add_item(menu.item("Changer le port du serveur",("input server_port",settings)))
-        optionsmenu.add_item(menu.item("Configurer les touches",("menu",touchesmenu)))
-        optionsmenu.add_item(menu.item("Retour au menu",("quit",None)))
-        
-        touchesmenu.add_item(menu.item("Configuration des touches",None))
-        liste_touches = [k for k in settings["keys"]]
-        liste_touches.sort()
-        for k in liste_touches:
-            touchesmenu.add_item(menu.item(menu.key_name[k],("keyconf " + k, settings)))
-        
-        result = mainmenu.mainloop()
-    else:
-        result = ['solo',]
-    quitter = False
-    if result:
-        if result[0] == "solo":
-            settings["solo"] = True
-        if result[0] == "multi":
-            settings["solo"] = False
-        if result[0] == "quit":
-            quitter = True
-    
-    try:
-        opts, args = getopt.getopt(argv, "f1nhs:p:", ["fullscreen","one-player","no-network","help","server","port"])
-    except getopt.GetoptError:
-        usage()
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("-f", "--fullscreen"):
-            settings["fullscreen"] = True
-        if opt in ("-1", "--one-player"):
-            settings["server"] = None
-            settings["solo"] = True
-        if opt in ("-n", "--no-network"):
-            settings["server"] = None
-        if opt in ("-h", "--help"):
-            usage()
-            sys.exit()
-        if opt in ("-s", "--server"):
-            settings["server"] = arg
-        if opt in ("-p", "--port"):
-            settings["port"] = int(arg)
-            
-    s = shelve.open(config_file)
-    s["settings"] = settings
-    s.close()
-    model = None
-    if not quitter:
-        model = mptd(settings)
-        model.run()
-    print model.calcul.times
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

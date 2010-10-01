@@ -1,3 +1,6 @@
+Some code (colour.py and games.py) included is from http://www.livewires.org.uk/ (distributed under the BSD licence). Please see included comments.
+
+################################################
 Principe tower defense mais multijoueur
 
 chaque joueur doit s'occuper de sa d�fense et de g�n�rer des cr�atures pour attaquer l'adversaire
