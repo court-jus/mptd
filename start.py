@@ -129,7 +129,7 @@ def main(argv):
 
     settings = manage_configuration(argv)
     if settings:
-        s = MptdScreen(700, 500, settings)
+        s = MptdScreen(settings)
         s.mainloop()
 
 if __name__ == "__main__":

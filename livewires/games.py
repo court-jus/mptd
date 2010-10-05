@@ -512,8 +512,8 @@ class Object:
         self._y_offset_ = self._y_offset = y_offset
 
         self._rect = self._surface.get_rect ()
-	self._x = 0
-	self._y = 0
+        self._x = 0
+        self._y = 0
         self.move_to (x,y)
 
         self._a = a

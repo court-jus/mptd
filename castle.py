@@ -110,8 +110,8 @@ class badguy_factory(building):
             self.gauge.kill()
             
     def update_boutons_text(self):
-        print "TODO update_boutons_text"
-        return
+        if not self.cm.game.dm.upgrades_menu:
+            return
         if not self.upgrades_boutons:
             self.upgrades_boutons = {
                 "speed" : self.cm.game.dm.upgrades_menu.boutons["upgrade_bgspeed"],
@@ -426,8 +426,8 @@ class castle:
         self.begin_build = None # when did I begin the build ?
     
     def update_boutons_text(self,recurse = True):
-        print "TODO update_boutons_text"
-        return
+        if not self.cm.game.dm.build_menu:
+            return
         self.cm.game.dm.build_menu.boutons["labo"].update_text(self.cm.game.make_text("building","laboratory"))
         self.cm.game.dm.build_menu.boutons["bg_factory"].update_text(self.cm.game.make_text("building","badguy_factory"))
         self.cm.game.dm.build_menu.boutons["build_castle_defense"].update_text(self.cm.game.make_text("building","castle_defense"))

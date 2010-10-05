@@ -48,8 +48,7 @@ class mptd:
         self.castle = castle.castle(self.cm, self.single_player)
         if self.single_player:
             self.castle.update_boutons_text()
-            print "TODO : update_bb"
-            #self.dm.update_bb(message = "Bienvenue dans le mode solo")
+            self.dm.update_bb(message = "Bienvenue dans le mode solo")
         self.nm = None
         if self.settings["server_ip"] and not self.single_player:
             print "Connecting to serveur",self.settings["server_ip"],"on port",self.settings["server_port"]
@@ -66,8 +65,6 @@ class mptd:
         self.towers    = []
         self.badguys    = []
         self.objects    = [self.towers , self.badguys]
-        
-                
                 
         self.current_wave = {
             "number":   0,
@@ -82,7 +79,7 @@ class mptd:
         self.update_road = False
         self.cm.post(["mode_change","SELECT"])
         #self.road = self.find_road(self.mapdata[:])              # the "road" is the shortest path from (0,0) to the castle (this road must be kept open)
-#        self.castle.build("badguy_factory",1000,0.1,castle.badguy_factory)
+        #self.castle.build("badguy_factory",1000,0.1,castle.badguy_factory)
         
     def run(self):
         #self.dm.display.start()     # draw to screen in a thread
@@ -125,7 +122,6 @@ class mptd:
 
         now = pygame.time.get_ticks()
         b = self.castle.has_building(castle.badguy_factory)
-        self.dm.update()        # update sprites (badguys, towers...)
         self.castle.update()
         if self.current_wave["number"] > 0 and now > self.last_bg_sent + ECART_MIN_ENTRE_BG:
             self.last_bg_sent = now
