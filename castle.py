@@ -54,7 +54,7 @@ class badguy_factory(building):
             }
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(badguy_factory, self).__init__(castle,cm)
         self.castle = castle
         self.begin_build = None
         self.end_upgrade = None
@@ -260,7 +260,7 @@ class castle_defense(building):
     name = "Donjon"
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(castle_defense, self).__init__(castle,cm)
         self.level = 0
         self.cm.post(["castle_defense_built",self])
         
@@ -270,7 +270,7 @@ class brouzouf_tower_building(building):
     name = "Brouzouf Tw"
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(brouzouf_tower_building).__init__(castle,cm)
         self.level = 0
         self.cm.post(["brouzouf_tower_building_built",self])
         
@@ -310,7 +310,7 @@ class laboratory(building):
     bt_name = "labo"
         
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(laboratory, self).__init__(castle,cm)
         self.level = 0
         self.castle = castle
         self.begin_build = None
