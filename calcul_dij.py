@@ -4,7 +4,7 @@ import threading, time
 
 class calcul_dij(threading.Thread):
     def __init__(self,mapdata,w,h,goal):
-        threading.Thread.__init__(self)
+        super(calcul_dij, self).__init__()
         self._stopEvent = threading.Event()
         self.mapdata = mapdata
         self.w = w
