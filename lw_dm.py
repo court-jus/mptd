@@ -5,6 +5,7 @@ from mptd import mptd
 from gamemenu import main_menu, build_menu, research_menu, upgrades_menu, special_menu
 import pygame
 import os, sys
+import objects
 
 PATHNAME=os.path.dirname(sys.argv[0])
 FULLPATH=os.path.abspath(PATHNAME)
@@ -16,7 +17,7 @@ GAME_HEIGHT = 600
 
 class MptdScreen(games.Screen):
     def __init__(self, settings):
-        games.Screen.__init__(self, SCREEN_WIDTH, SCREEN_HEIGHT)
+        super(MptdScreen, self).__init__(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.set_background(pygame.image.load(DATAPATH + "background.png"))
         games.pygame.display.set_caption('MPTD | By Ghislain Lévêque')
         self.model = self.main_menu = self.build_menu = self.research_menu = self.upgrades_menu = self.special_menu = None
@@ -39,7 +40,10 @@ class MptdScreen(games.Screen):
     def tick(self):
         self.model.tick()
         for listener in self.tick_listeners:
-            listener.update()
+            if hasattr(listener, '_gone') and listener._gone == 1:
+                self.tick_listeners.remove(listener)
+            else:
+                listener.update()
 
     def handle_events (self):
         if not self.model:
@@ -59,11 +63,19 @@ class MptdScreen(games.Screen):
     def update_bb(self, message = None):
         self.blackboard.update_bb(message)
 
+    def create_badguy(self):
+        bg = objects.badguy(self,self.model.cm)
+        self.tick_listeners.append(bg)
+        return bg
+    
+    def notify(self, event):
+        print "i've been notified of", event
+
 class BlackBoard(games.Object):
     def __init__(self, screen):
         surface = pygame.Surface((SCREEN_WIDTH - GAME_WIDTH,SCREEN_HEIGHT))
         self.font = pygame.font.Font(os.path.join(DATAPATH,"VeraBd.ttf"),16)
-        games.Object.__init__(self, screen, 800, 20, surface)
+        super(BlackBoard, self).__init__(screen, 800, 20, surface)
         
     def update_text(self,text):
         lines = text.split("\n")
