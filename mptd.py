@@ -43,6 +43,7 @@ class mptd:
         self.current_tower_creation_mode = objects.basic_tower
         self.cm        = cm.cm (self.settings["keys"],self.settings["touches_boutons"])            # create a new control manager
         self.cm.register_game (self)                # register self to cm        
+        self.cm.register(screen)
         #self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
         self.dm = screen
         self.castle = castle.castle(self.cm, self.single_player)
@@ -161,8 +162,8 @@ class mptd:
                 self.nm.stop()
             #if self.calcul:
                 #self.calcul.stop()
-            if self.dm and hasattr(self.dm.display,"stop"):
-                self.dm.display.stop()
+            if self.dm:
+                self.dm.quit()
         elif event [0] == "clic":
             if event[1][0] == "TOWER_CREATE":
                 if self.castle.money >= self.current_tower_creation_mode.cost:
