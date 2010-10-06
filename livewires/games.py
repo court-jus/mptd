@@ -89,7 +89,7 @@ class GamesError (Exception): pass
 ##
 ###############################################################################
 
-class Screen:
+class Screen(object):
 
     initialised = 0
     got_statics = 0
@@ -477,7 +477,7 @@ class Screen:
 ##                                                                           ##
 ###############################################################################
 
-class Object:
+class Object(object):
 
     def __init__ (self, screen, x, y, surface, a=0, x_offset=0, y_offset=0,
                   static=0):
@@ -529,6 +529,7 @@ class Object:
     # When an object is GCed, it should disappear.
     def __del__(self):
         if not self._gone: self.destroy()
+    kill = __del__
 
     def destroy(self):
         """
@@ -734,7 +735,7 @@ class Sprite (Object):
 
 #------------------------------------------------------------------------------
 
-class ColourMixin:
+class ColourMixin(object):
     """
     This is a mixin class which handles colour changes for geometric
     objects by redrawing them on a new surface using their
@@ -755,7 +756,7 @@ class ColourMixin:
 
 #------------------------------------------------------------------------------
 
-class OutlineMixin:
+class OutlineMixin(object):
     """
     This is a mixin class which handles colour changes for the outlines
     of geometric objects by redrawing them on a new surface using their
@@ -1010,7 +1011,7 @@ class Circle (Object, ColourMixin, OutlineMixin):
 
 #------------------------------------------------------------------------------
 
-class Timer:
+class Timer(object):
     """
     This is a class which you can add to an Object to make a new class.
     In your new class, you must supply a |tick| method. This method will
