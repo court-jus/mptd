@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from livewires import games
 import pygame.image
 import pygame.sprite
 
@@ -66,9 +68,9 @@ class tower(pygame.sprite.Sprite):
                             break
 
     def get_visual_coord(self):
-	return self.visual_coord[:]
+        return self.visual_coord[:]
 
-    def destroy(self):
+    def _destroy(self):
         self.cm.game.remove_tower(self)
         self.kill()
         self.dm.need_update = True
@@ -103,7 +105,7 @@ class tower(pygame.sprite.Sprite):
         #print "will sell this tower for",income
         self.cm.game.castle.modify_money(income)
         self.cm.game.calcul.rundij()
-        self.destroy()
+        self._destroy()
 
     def continue_current_build(self):
         from pygame_dm import DATAPATH
@@ -141,7 +143,7 @@ class basic_tower(tower):
         ]
         
     def __init__(self,dm,cm,group = None):
-        tower.__init__(self,dm,cm,group)
+        super(basic_tower, self).__init__(dm,cm,group)
         self.init = True
        
         
@@ -163,7 +165,7 @@ class castle_tower(tower):
         ]
     
     def __init__(self,dm,cm,group=None):
-        tower.__init__(self,dm,cm,group)
+        super(castle_tower, self).__init__(dm,cm,group)
         self.init = True
         
 class brouzouf_tower(tower):
@@ -208,7 +210,7 @@ class brouzouf_tower(tower):
             ]
         
     def __init__(self,dm,cm,group=None):
-        tower.__init__(self,dm,cm,group)
+        super(brouzouf_tower, self).__init__(dm,cm,group)
         self.init = True
         self.dernier_brouzouf_genre = 0
        
@@ -223,12 +225,11 @@ class brouzouf_tower(tower):
             self.dernier_brouzouf_genre = now
             game.castle.modify_money(2)
        
-class badguy(pygame.sprite.Sprite):
+class badguy(games.Sprite):
     """ The badguy class describe every badguy in the game """
 
     selectable = True
-    def __init__(self,dm,cm, group = None):
-        super(badguy, self).__init__(group)
+    def __init__(self,dm,cm):
         self.image = pygame.Surface((16,16))
         self.transparent = (255,0,255)
         self.image.set_colorkey(self.transparent)
@@ -246,7 +247,7 @@ class badguy(pygame.sprite.Sprite):
         self.coord    = (0,0)        # where the badguy is
         self.visual_coord = [0,0]
         self.obj    =   [0,0]        # coord this badguy wants to reach
-        #self.path = None			# the AStar path
+        #self.path = None            # the AStar path
         self.next_step = None
         self.size   = 10            # withiin this range, the badguy is hit by bullets
         self.win        = False         # will be true when will reach the objective
@@ -254,25 +255,28 @@ class badguy(pygame.sprite.Sprite):
         self.blocked = False
         self.starting = True
         self.selected = False
-        self.kamikaze = False		# if kamikaze is True, the badguy will explode and destroy every tower around him
+        self.kamikaze = False        # if kamikaze is True, the badguy will explode and _destroy every tower around him
         self.last_good_step = 0
         self.starting_coord = None
         self.birth = pygame.time.get_ticks()
+        super(badguy, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
         self.draw()
         self.init = True
         
     def draw(self):
-        self.image.fill(self.transparent)
+        image = pygame.Surface((16,16))
+        image.fill(self.transparent)
         if self.selected:
-            pygame.draw.circle(self.image,(255,0,0),(8,8),8,0)
+            pygame.draw.circle(image,(255,0,0),(8,8),8,0)
         #color = pygame.color.multiply(self.color,  ( abs(self.life * 255) / (self.full_life + 1) ) )
         color = self.color
-        pygame.draw.circle(self.image,color,(8,8),6,0)
+        pygame.draw.circle(image,color,(8,8),6,0)
         if self.special == "kamikaze":
-            pygame.draw.circle(self.image,(255,0,0),(8,8),3,0)
+            pygame.draw.circle(image,(255,0,0),(8,8),3,0)
         elif self.special == "para":
-            pygame.draw.circle(self.image,(0,0,0),(8,8),3,0)
-            
+            pygame.draw.circle(image,(0,0,0),(8,8),3,0)
+        self.replace_image(image)
+        self.move_to(self.visual_coord)
 
     def explode(self):
         distance = 9999
@@ -284,10 +288,10 @@ class badguy(pygame.sprite.Sprite):
                     tower = t
                     distance = t_distance
         if tower:
-            tower.destroy()
+            tower._destroy()
             #self.cm.game.calcul.starting_path = None
             self.kamikaze = False
-        self.destroy()
+        self._destroy()
         
     def find_path(self):
         calcul = self.cm.game.calcul
@@ -326,10 +330,10 @@ class badguy(pygame.sprite.Sprite):
             if self.special == "kamikaze":
                 self.explode()
             else:
-                self.destroy()
+                self._destroy()
             return
         if self.blocked or not self.next_step:
-            #print "pas de path"
+            print "pas de path"
             self.find_path()
             return
         if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
@@ -339,21 +343,20 @@ class badguy(pygame.sprite.Sprite):
             if not self.cm.game.single_player:
                 self.cm.game.nm.send(":earn_money 1.5 *level:")
             self.dm.update_bb()
-            self.destroy()
+            self._destroy()
             return
-        #print "follow"
         self.follow_astar ()
 
     def follow_astar(self):
         #print self,"next step",self.next_step
-	self.move_to_next_step()
+        self.move_to_next_step()
         if self.visual_coord[0] / 10.0 == self.next_step%80 and self.visual_coord[1] / 10.0 == self.next_step/80:
-		self.coord = (self.next_step%80,self.next_step/80)
-		self.visual_coord = [self.coord[0]*10, self.coord[1]*10]
-                self.last_good_step = self.next_step
-                #self.next_step = self.path.pop(0)
-                self.find_path()
-                    #print "pop",len(self.path)
+            self.coord = (self.next_step%80,self.next_step/80)
+            self.visual_coord = [self.coord[0]*10, self.coord[1]*10]
+            self.last_good_step = self.next_step
+            #self.next_step = self.path.pop(0)
+            self.find_path()
+            #print "pop",len(self.path)
 
     def move_to_next_step(self):
         #print "move_to_next_step"
@@ -382,14 +385,14 @@ class badguy(pygame.sprite.Sprite):
         self.rect.center = (self.visual_coord[0], self.visual_coord[1])
         self.dm.need_update = True
     
-    def destroy(self):
+    def _destroy(self):
         if self in self.cm.game.badguys:
             self.cm.game.badguys.remove(self)
         self.kill()
         self.dm.need_update = True
 
     def get_visual_coord(self):
-	return [self.visual_coord[0] + 5, self.visual_coord[1] + 5]
+        return [self.visual_coord[0] + 5, self.visual_coord[1] + 5]
         
     def get_info(self):
         string = "Mechant :\nVie : "+str(self.life)+"\nVitesse : "+str(self.speed)+"\nType : "+str(self.type)
@@ -425,7 +428,7 @@ class bullet(pygame.sprite.Sprite):
         if not hasattr(self,"init"):
             return
         if not self.alive:
-            self.destroy()
+            self._destroy()
         distance = ((self.target.visual_coord[0] - self.visual_coord[0])**2.0 + (self.target.visual_coord[1] - self.visual_coord[1])**2.0)**(1.0/2.0)
         if distance > self.target.size:
             self.move ()
@@ -433,7 +436,7 @@ class bullet(pygame.sprite.Sprite):
             self.target.life -= self.power
             if self.target.selected:
                 self.dm.update_bb(self.target.get_info())
-            self.destroy()
+            self._destroy()
     
     def move(self):
         x_dir = self.target.visual_coord [0] - self.visual_coord [0]
@@ -453,10 +456,10 @@ class bullet(pygame.sprite.Sprite):
         self.rect.center = (self.visual_coord[0], self.visual_coord[1])
         self.dm.need_update = True
 
-    def destroy(self):
+    def _destroy(self):
         self.alive = False
         self.kill()
         self.dm.need_update = True
 
     def get_visual_coord(self):
-	return self.visual_coord[:]
+        return self.visual_coord[:]
