@@ -68,8 +68,90 @@ class MptdScreen(games.Screen):
         self.tick_listeners.append(bg)
         return bg
     
+    def create_tower(self, twclass):
+        tw = twclass(self,self.model.cm)
+        self.update_bb()
+        self.tick_listeners.append(tw)
+        return tw
+
+    def create_bullet(self,tower,badguy):
+    	bul = objects.bullet(self,tower,badguy)
+        bul.speed = badguy.speed * 2
+        bul.power = tower.power
+        bul.visual_coord = tower.visual_coord[:]
+        self.tick_listeners.append(bul)
+        return bul
+    
     def notify(self, event):
-        print "i've been notified of", event
+        if event[0] != "mouse_move":
+            print "notify event",event
+        if event [0] == "toggle_fullscreen":
+            pygame.display.toggle_fullscreen()
+        elif event [0] == "badguy_count_update":
+            self.update_bb()
+        elif event [0] == "level_up":
+            self.update_bb()
+        elif event [0] == "clic":
+            ev = self.menu.clic(event)
+            if ev:
+                print "current menu sent",ev
+                self.model.cm.post(ev)
+            ev = self.main_menu.clic(event)
+            if ev:
+                print "main menu sent",ev
+                self.model.cm.post(ev)
+        return
+        if False:
+            pass
+        elif (event [0] == "menu_change" and event [1] == "construction") or event [0] == "construire":
+            #self.model.cm.post(("mode_change","TOWER_CREATE"))
+            self.menu = self.build_menu
+        elif ((event [0] == "menu_change" and event [1] == "research") or event [0] == "rechercher") and self.research_menu_available:
+            #self.model.cm.post(("mode_change","SELECT"))
+            self.menu = self.research_menu
+        elif ((event [0] == "menu_change" and event [1] == "upgrades") or event [0] == "ameliorer") and self.upgrades_menu_available:
+            #self.model.cm.post(("mode_change","TOWER_UPGRADE"))
+            self.menu = self.upgrades_menu
+        elif ((event [0] == "menu_change" and event [1] == "special") or event [0] == "specialiser") and self.special_menu_available:
+            #self.model.cm.post(("mode_change","TOWER_SELL"))
+            self.menu = self.special_menu
+        elif event [0] == "mode_change":
+            if event [1] == "TOWER_CREATE":
+                self.mouse_cursor.set_tc()
+            elif event [1] == "TOWER_UPGRADE":
+                self.mouse_cursor.set_tu()
+            elif event [1] == "SELECT" :
+                self.mouse_cursor.set_select()
+            elif event [1] == "TOWER_SELL" :
+                self.mouse_cursor.set_sell()
+        #elif event [0] == "mouse_move":
+            #found = None
+            #for bulle_sprite in self.bulle.sprites:
+                #if bulle_sprite[0] in self.menu.boutons:
+                    #if bulle_sprite[0].rect.collidepoint(event [1]):
+                        #self.bulle.update_text(bulle_sprite[1],event[1])
+                        #found = True
+            #if not found:
+                #self.bulle.hide()
+        elif event [0] == "menu_bouton_pressed":
+            if event [1] <= (len(self.menu.boutons)):
+                btnum = event [1] - 1
+                bt = self.menu.boutons_by_num[btnum]
+                self.model.cm.post((bt.event,bt))
+        elif event [0] == "select_stuff":
+            stuff = event [1]
+            if stuff and hasattr(stuff,"selectable"):
+                if self.selected_stuff:
+                    self.selected_stuff.image = self.selected_stuff.image_save.copy()
+                    self.selected_stuff.selected = False
+                stuff.selected = True
+                stuff.image.fill((255,0,0))
+                stuff.image.blit(stuff.image_save,(0,0))
+                self.selected_stuff = stuff
+                self.update_bb(str(stuff.get_info()))
+
+    def debug(self, *args, **kwargs):
+        print "DEBUG",args,kwargs
 
 class BlackBoard(games.Object):
     def __init__(self, screen):
@@ -117,5 +199,4 @@ class BlackBoard(games.Object):
             for info_name in self.screen.model.enemy_info:
                 string += "\n" + info_name + " : " + str(self.screen.model.enemy_info[info_name])
         self.update_text(string);
-        self.need_update = True
         

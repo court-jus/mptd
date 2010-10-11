@@ -5,7 +5,7 @@ import pygame.sprite
 
 TEST = True
 
-class tower(pygame.sprite.Sprite):
+class tower(games.Sprite):
     """ The tower class represents any tower in the game """
     cost = 0
         #life, speed, power, range, image,          upgrade_time, upgrade_price,    sell_income
@@ -22,7 +22,6 @@ class tower(pygame.sprite.Sprite):
     selectable = True
     def __init__(self,dm,cm, group = None):
         from pygame_dm import DATAPATH, TAR_NORMAL
-        super(tower, self).__init__(group)
         self.level = 0
         self.image_name  = self.levels[self.level][4]
         self.image = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
@@ -43,12 +42,19 @@ class tower(pygame.sprite.Sprite):
         self.selected = False
         self.current_construction = None # upgrade status
         self.end_upgrade = None # when will the upgrade be ready ?
+        super(tower, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
+        self.draw()
+        self.init = True
+
+    def draw(self):
+        self.replace_image(self.image)
+        self.move_to(self.visual_coord)
 
     def set_map_coord(self,new_tower_coord):
         self.coord = new_tower_coord
         self.visual_coord = [self.coord [0]*10, self.coord[1]*10]
         self.rect.center = (self.visual_coord[0], self.visual_coord[1])
-        self.dm.need_update = True
+        self.draw()
 
     def update(self):
         if not hasattr(self,"init"):
@@ -73,7 +79,6 @@ class tower(pygame.sprite.Sprite):
     def _destroy(self):
         self.cm.game.remove_tower(self)
         self.kill()
-        self.dm.need_update = True
         
     def get_info(self):
         string = "Tour ("+str(self.type)+") :\n"
@@ -110,7 +115,6 @@ class tower(pygame.sprite.Sprite):
     def continue_current_build(self):
         from pygame_dm import DATAPATH
         self.gauge.update_gauge(pygame.time.get_ticks())
-        self.dm.need_update = True
         if pygame.time.get_ticks() >= self.end_upgrade:
             self.gauge.kill()
             self.current_construction = None
@@ -123,7 +127,6 @@ class tower(pygame.sprite.Sprite):
                 self.power  = self.levels[self.level][2]
                 self.range  = self.levels[self.level][3]
                 self.image  = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
-                self.dm.need_update = True
                 self.image_save = self.image.copy()
                 self.dm.update_bb(self.get_info())
 
@@ -383,13 +386,11 @@ class badguy(games.Sprite):
         self.visual_coord [0] += x_move
         self.visual_coord [1] += y_move
         self.rect.center = (self.visual_coord[0], self.visual_coord[1])
-        self.dm.need_update = True
     
     def _destroy(self):
         if self in self.cm.game.badguys:
             self.cm.game.badguys.remove(self)
         self.kill()
-        self.dm.need_update = True
 
     def get_visual_coord(self):
         return [self.visual_coord[0] + 5, self.visual_coord[1] + 5]
@@ -405,11 +406,10 @@ class badguy(games.Sprite):
         #self.image_save = self.image.copy()
         #self.rect = self.image.get_rect()
 
-class bullet(pygame.sprite.Sprite):
+class bullet(games.Sprite):
     """ The bullet class represents any bullet fired by a tower """
     def __init__(self,dm,tower,target,group = None):
         from pygame_dm import DATAPATH
-        super(bullet, self).__init__(group)
         self.image = pygame.image.load(DATAPATH + "bullet.png").convert_alpha()
         self.image_save = self.image.copy()
         self.rect = self.image.get_rect()
@@ -422,7 +422,13 @@ class bullet(pygame.sprite.Sprite):
         self.tower  =   tower   # what tower fired me ?
         self.target =   target  # what badguy will I shoot ?
         self.alive = True
+        super(bullet, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
+        self.draw()
         self.init = True
+
+    def draw(self):
+        self.replace_image(self.image)
+        self.move_to(self.visual_coord)
 
     def update(self):
         if not hasattr(self,"init"):
@@ -453,13 +459,11 @@ class bullet(pygame.sprite.Sprite):
             y_move = speed * ( y_dir > 0) - speed * ( y_dir < 0)
         self.visual_coord [0] += x_move
         self.visual_coord [1] += y_move
-        self.rect.center = (self.visual_coord[0], self.visual_coord[1])
-        self.dm.need_update = True
+        self.draw()
 
     def _destroy(self):
         self.alive = False
         self.kill()
-        self.dm.need_update = True
 
     def get_visual_coord(self):
         return self.visual_coord[:]
