@@ -26,18 +26,24 @@ class MptdScreen(games.Screen):
         self.model = mptd(self, settings)
         self.update_bb()
 
-        self.main_menu = main_menu(None,self,None)
-        self.build_menu = build_menu(None,self,None)
-        self.research_menu = research_menu(None,self,None)
-        self.research_menu_available = False
-        self.upgrades_menu = upgrades_menu(None,self,None)
-        self.upgrades_menu_available = False
-        self.special_menu = special_menu(None,self,None)
-        self.special_menu_available = False
-        self.menu = self.build_menu
-
+        self.menu = None
+        self.main_menu = main_menu(self)
+        self.build_menu = build_menu(self)
+        self.research_menu = research_menu(self)
+        self.upgrades_menu = upgrades_menu(self)
+        self.special_menu = special_menu(self)
+        self.research_menu_available = self.upgrades_menu_available = self.special_menu_available = False
+        self.main_menu.show()
+        self.select_menu(self.build_menu)
 
         self.tick_listeners = []
+
+    def select_menu(self, new_menu):
+        print "sleect menu",new_menu
+        if self.menu:
+            self.menu.hide()
+        self.menu = new_menu
+        self.menu.show()
 
     def tick(self):
         self.model.tick()
@@ -84,6 +90,14 @@ class MptdScreen(games.Screen):
         self.tick_listeners.append(bul)
         return bul
 
+    def create_gauge(self,init_value,final_value,stuff):
+        attach_point = stuff
+        if not attach_point:
+            attach_point = (GAME_WIDTH/2,GAME_HEIGHT/2)
+        g = objects.gauge(self, init_value, final_value, attach_point)
+        self.need_update = True
+        return g
+
     def remove_shadow(self):
         if not self.shadow:
             return
@@ -122,21 +136,21 @@ class MptdScreen(games.Screen):
             elif event [1] == "TOWER_SELL" :
                 # TODO mouse cursor self.mouse_cursor.set_sell()
                 self.remove_shadow()
+        elif (event [0] == "menu_change" and event [1] == "construction") or event [0] == "construire":
+            #self.model.cm.post(("mode_change","TOWER_CREATE"))
+            self.select_menu(self.build_menu)
+        elif ((event [0] == "menu_change" and event [1] == "research") or event [0] == "rechercher") and self.research_menu_available:
+            #self.model.cm.post(("mode_change","SELECT"))
+            self.select_menu(self.research_menu)
+        elif ((event [0] == "menu_change" and event [1] == "upgrades") or event [0] == "ameliorer") and self.upgrades_menu_available:
+            #self.model.cm.post(("mode_change","TOWER_UPGRADE"))
+            self.select_menu(self.upgrades_menu)
+        elif ((event [0] == "menu_change" and event [1] == "special") or event [0] == "specialiser") and self.special_menu_available:
+            #self.model.cm.post(("mode_change","TOWER_SELL"))
+            self.select_menu(self.special_menu)
         return
         if False:
             pass
-        elif (event [0] == "menu_change" and event [1] == "construction") or event [0] == "construire":
-            #self.model.cm.post(("mode_change","TOWER_CREATE"))
-            self.menu = self.build_menu
-        elif ((event [0] == "menu_change" and event [1] == "research") or event [0] == "rechercher") and self.research_menu_available:
-            #self.model.cm.post(("mode_change","SELECT"))
-            self.menu = self.research_menu
-        elif ((event [0] == "menu_change" and event [1] == "upgrades") or event [0] == "ameliorer") and self.upgrades_menu_available:
-            #self.model.cm.post(("mode_change","TOWER_UPGRADE"))
-            self.menu = self.upgrades_menu
-        elif ((event [0] == "menu_change" and event [1] == "special") or event [0] == "specialiser") and self.special_menu_available:
-            #self.model.cm.post(("mode_change","TOWER_SELL"))
-            self.menu = self.special_menu
         #elif event [0] == "mouse_move":
             #found = None
             #for bulle_sprite in self.bulle.sprites:
@@ -186,7 +200,6 @@ class BlackBoard(games.Object):
         self.replace_image(surface)
 
     def update_bb(self, message = None):
-        print "Update BB : %s" % message
         if message:
             self.message = message
         # Unless the game is initialized, don't go farther
@@ -197,10 +210,9 @@ class BlackBoard(games.Object):
         string += str(self.screen.model.castle.lifes)
         if self.screen.model.single_player:
             string += """\n\nProchaine vague :"""
-            string += str(20 - self.screen.model.castle.get_badguys_ready())
         else:
             string += """\n\nMechants prets :"""
-            string += str(self.screen.model.castle.get_badguys_ready())
+        string += str(self.screen.model.castle.get_badguys_ready())
         string += """\n\nBrouzoufs :"""
         string += str(self.screen.model.castle.money)
         string += """\n\nVictimes :"""

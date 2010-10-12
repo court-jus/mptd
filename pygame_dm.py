@@ -90,30 +90,6 @@ class blackboard(pygame.sprite.Sprite):
             self.image.blit(test_text,(10,h))
             h += height
             
-class gauge(pygame.sprite.Sprite):
-    def __init__(self,init_value,final_value,sprite_or_center,group = None):
-        pygame.sprite.Sprite.__init__(self,group)
-        if isinstance(sprite_or_center,pygame.sprite.Sprite):
-            width = sprite_or_center.rect.width * 90/100
-            center = sprite_or_center.rect.center
-        else:
-            width = 30
-            center = sprite_or_center
-        self.image = pygame.Surface((width, 4))
-        self.rect= self.image.get_rect()
-        
-        self.rect.center = center
-        self.image.fill((0,0,0))
-        self.ini_val = init_value
-        self.fin_val = final_value
-        self.update_gauge(init_value)
-        
-    def update_gauge(self,value):
-        w = (value - self.ini_val) * self.rect.width / (self.fin_val - self.ini_val)
-        rect = pygame.Rect((1,1),(w,2))
-        self.image.fill((0,0,0))
-        self.image.fill((255,0,0), rect)
-        
 class infobulle(pygame.sprite.Sprite):
     def __init__(self,group = None):
         pygame.sprite.Sprite.__init__(self,group)

@@ -130,7 +130,7 @@ class mptd:
         elif len(self.waves) > 0:
             self.current_wave = self.waves.pop(0)
             self.colors.append(self.colors.pop(0)) # rotation des couleurs
-        if now > self.last_wave_sent + ECART_MIN_ENTRE_VAGUES and b and b.badguys_ready >= 20:
+        if (now > self.last_wave_sent + ECART_MIN_ENTRE_VAGUES and b and b.badguys_ready >= 20):
             self.cm.post(("send_badguys",None))
         if self.castle.lifes <= 0:
             self.cm.post(["quit_game",None])
@@ -199,6 +199,7 @@ class mptd:
                             "coord" : coord,
                             }
                         self.waves.append(wave)
+                        print self.waves
                     else:
                         self.nm.send(":send_badguys " + str(numb) + " " + str(b.badguys_life) + " " + str(b.badguys_speed) + " None " + str(coord[0]) + " " + str(coord[1]) + ":")
                     b.badguys_ready = 0
