@@ -18,6 +18,7 @@ GAME_HEIGHT = 600
 class MptdScreen(games.Screen):
     def __init__(self, settings):
         super(MptdScreen, self).__init__(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.shadow = None
         self.set_background(pygame.image.load(DATAPATH + "background.png"))
         games.pygame.display.set_caption('MPTD | By Ghislain Lévêque')
         self.model = self.main_menu = self.build_menu = self.research_menu = self.upgrades_menu = self.special_menu = None
@@ -34,6 +35,7 @@ class MptdScreen(games.Screen):
         self.special_menu = special_menu(None,self,None)
         self.special_menu_available = False
         self.menu = self.build_menu
+
 
         self.tick_listeners = []
 
@@ -81,6 +83,12 @@ class MptdScreen(games.Screen):
         bul.visual_coord = tower.visual_coord[:]
         self.tick_listeners.append(bul)
         return bul
+
+    def remove_shadow(self):
+        if not self.shadow:
+            return
+        self.shadow.kill()
+        self.shadow = None
     
     def notify(self, event):
         if event[0] != "mouse_move":
@@ -100,6 +108,20 @@ class MptdScreen(games.Screen):
             if ev:
                 print "main menu sent",ev
                 self.model.cm.post(ev)
+        elif event [0] == "mode_change":
+            if event [1] == "TOWER_CREATE":
+                # TODO mouse cursor self.mouse_cursor.set_tc()
+                if not self.shadow:
+                    self.shadow = objects.shadow(self, self.model.cm)
+            elif event [1] == "TOWER_UPGRADE":
+                # TODO mouse cursor self.mouse_cursor.set_tu()
+                self.remove_shadow()
+            elif event [1] == "SELECT" :
+                # TODO mouse cursor self.mouse_cursor.set_select()
+                self.remove_shadow()
+            elif event [1] == "TOWER_SELL" :
+                # TODO mouse cursor self.mouse_cursor.set_sell()
+                self.remove_shadow()
         return
         if False:
             pass
@@ -115,15 +137,6 @@ class MptdScreen(games.Screen):
         elif ((event [0] == "menu_change" and event [1] == "special") or event [0] == "specialiser") and self.special_menu_available:
             #self.model.cm.post(("mode_change","TOWER_SELL"))
             self.menu = self.special_menu
-        elif event [0] == "mode_change":
-            if event [1] == "TOWER_CREATE":
-                self.mouse_cursor.set_tc()
-            elif event [1] == "TOWER_UPGRADE":
-                self.mouse_cursor.set_tu()
-            elif event [1] == "SELECT" :
-                self.mouse_cursor.set_select()
-            elif event [1] == "TOWER_SELL" :
-                self.mouse_cursor.set_sell()
         #elif event [0] == "mouse_move":
             #found = None
             #for bulle_sprite in self.bulle.sprites:

@@ -5,6 +5,29 @@ import pygame.sprite
 
 TEST = True
 
+class shadow(games.Sprite):
+    """Cursor shadow while in tower create mode"""
+    def __init__(self, dm, cm):
+        from pygame_dm import DATAPATH
+        self.cm = cm
+        cm.register(self)
+        x = y = 0
+        image = pygame.Surface((30,30))
+        self.image = pygame.image.load(DATAPATH + "tower_shadow.png").convert_alpha()
+        super(shadow, self).__init__(dm, x, y, self.image)
+        #self.replace_image(image)
+        #self.move_to(x, y)
+
+    def notify(self, event):
+        print "notify me", event
+        if event[0] == "mouse_move":
+            self._erase()
+            self.move_to(event[1][0]/10*10, event[1][1]/10*10)
+
+    def kill(self):
+        super(shadow, self).kill()
+        self.cm.unregister(self)
+
 class tower(games.Sprite):
     """ The tower class represents any tower in the game """
     cost = 0
