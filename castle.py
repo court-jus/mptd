@@ -33,6 +33,11 @@ class badguy_factory(building):
         "life"        : [20   , 40   , 75   , 100  , 200  , 300  , 400  , 600  , 800  , 950  , 1200 ],
         "build_speed" : [10   , 8    , 5    , 2    , 1    , 0.9  , 0.8  , 0.6  , 0.5  , 0.4  , 0.2  ],
         }
+    upgrades = {
+        "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.36 , 0.45 ],
+        "life"        : [50   , 40   , 75   , 100  , 200  , 300  , 400  , 600  , 800  , 950  , 1200 ],
+        "build_speed" : [0.5 for a in range(10)],
+        }
         
     upgrades_names = {
         "speed" : "Vitesse",
@@ -54,7 +59,7 @@ class badguy_factory(building):
             }
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(badguy_factory, self).__init__(castle,cm)
         self.castle = castle
         self.begin_build = None
         self.end_upgrade = None
@@ -110,6 +115,8 @@ class badguy_factory(building):
             self.gauge.kill()
             
     def update_boutons_text(self):
+        if not self.cm.game.dm.upgrades_menu:
+            return
         if not self.upgrades_boutons:
             self.upgrades_boutons = {
                 "speed" : self.cm.game.dm.upgrades_menu.boutons["upgrade_bgspeed"],
@@ -258,7 +265,7 @@ class castle_defense(building):
     name = "Donjon"
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(castle_defense, self).__init__(castle,cm)
         self.level = 0
         self.cm.post(["castle_defense_built",self])
         
@@ -268,7 +275,7 @@ class brouzouf_tower_building(building):
     name = "Brouzouf Tw"
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(brouzouf_tower_building).__init__(castle,cm)
         self.level = 0
         self.cm.post(["brouzouf_tower_building_built",self])
         
@@ -308,7 +315,7 @@ class laboratory(building):
     bt_name = "labo"
         
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(laboratory, self).__init__(castle,cm)
         self.level = 0
         self.castle = castle
         self.begin_build = None
@@ -424,6 +431,8 @@ class castle:
         self.begin_build = None # when did I begin the build ?
     
     def update_boutons_text(self,recurse = True):
+        if not self.cm.game.dm.build_menu:
+            return
         self.cm.game.dm.build_menu.boutons["labo"].update_text(self.cm.game.make_text("building","laboratory"))
         self.cm.game.dm.build_menu.boutons["bg_factory"].update_text(self.cm.game.make_text("building","badguy_factory"))
         self.cm.game.dm.build_menu.boutons["build_castle_defense"].update_text(self.cm.game.make_text("building","castle_defense"))

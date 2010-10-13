@@ -31,6 +31,19 @@ key_name = {
                 "menu_select" : "Menu principal : valider",
 }
 
+class Menu(object):
+    def __init__(self, keys, screen):
+        self.bg_img = None
+        self.bg_color = (0,0,0)
+        self.text_color = (255,255,255)
+        self.hl_color = (255,0,0)
+        self.keys = keys
+        self.items = []
+        self.selected_item = 1
+        self.screen = screen
+        self.font = pygame.font.Font(os.path.join(pygame_dm.DATAPATH,"VeraBd.ttf"),16)
+        self.event = None
+
 class menu:
     def __init__(self,keys):
         self.bg_img = None
