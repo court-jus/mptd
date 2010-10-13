@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import castle, calcul_dij
+import castle
 import pygame_dm, cm, nm
 import pygame
 import objects
@@ -10,6 +10,7 @@ import menu
 import shelve
 from pygame.locals import *
 from livewires import games
+from astar import astar
 
 ECART_MIN_ENTRE_BG = 150    # ms between two badguys
 ECART_MIN_ENTRE_VAGUES = 30000    # ms between two forced waves
@@ -34,9 +35,6 @@ class mptd:
             #for y in range(27,34):
                 #self.mapdata[x + y * self.mapw] = 9
         now = pygame.time.get_ticks
-        self.calcul = calcul_dij.calcul_dij(self.mapdata,self.mapw,self.maph,(self.castlex,self.castley))
-        #p = self.calcul.calcul_unique((0,0),(40,30))
-        #self.calcul.starting_path = self.make_road_from_path(p)
         self.single_player = settings["solo"]
         self.enemy_info = {}
         self.level = 1
@@ -74,9 +72,6 @@ class mptd:
             "special" : None,
             "coord" : (0,0),
             }
-        self.calcul.daemon = True
-        self.calcul.start()
-        #print self.calcul.starting_path
         self.update_road = False
         self.cm.post(["mode_change","SELECT"])
         #self.road = self.find_road(self.mapdata[:])              # the "road" is the shortest path from (0,0) to the castle (this road must be kept open)
@@ -134,6 +129,48 @@ class mptd:
             self.cm.post(("send_badguys",None))
         if self.castle.lifes <= 0:
             self.cm.post(["quit_game",None])
+
+    def astar(self, x, y, goalx = None, goaly = None):
+        if not goalx:
+            goalx = self.castlex
+        if not goaly:
+            goaly = self.castley
+        mapcoord = x + y * self.mapw
+        mapgoal  = goalx + goaly * self.mapw
+
+        def neighbors(pos):
+            l = pos - 1
+            r = pos + 1
+            t = pos - self.mapw
+            b = pos + self.mapw
+            neighbors = [l, r, t, b]
+            if pos < self.mapw:
+                neighbors.remove(t)
+            if pos % self.mapw == 0:
+                neighbors.remove(l)
+            if pos % self.mapw == self.mapw:
+                neighbors.remove(r)
+            if pos >= (self.mapw * (self.maph - 1)):
+                neighbors.remove(b)
+            return neighbors
+
+        def goal(pos):
+            return pos == mapgoal
+
+        def cost(a, b):
+            if self.mapdata[b] == -1:
+                return 9999
+            return self.mapdata[b]
+
+        def heuristic(pos):
+            x = pos % self.mapw
+            y = pos / self.mapw
+            dy, dx = abs(goaly - y), abs(goalx - x)
+            return min(dy, dx) * 14 + abs(dy - dx) * 10
+
+        def debug(nodes):
+            print len(nodes), "nodes searched"
+        return astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = debug)
         
     def make_road_from_path(self,ASPath):
         road = []
@@ -160,8 +197,6 @@ class mptd:
             self.running = False
             if self.nm:
                 self.nm.stop()
-            #if self.calcul:
-                #self.calcul.stop()
             if self.dm:
                 self.dm.quit()
         elif event [0] == "clic":
@@ -326,7 +361,6 @@ class mptd:
         bg.next_step = None
         bg.starting = False
         self.dm.need_update = True        #bg = badguy.badguy (self.dm , self.cm)
-        #bg.astar_calcul()
         self.badguys.append (bg)
             
     def create_tower(self,coord,check = True):
@@ -338,7 +372,6 @@ class mptd:
             tw.set_map_coord(new_tower_coord)
             tw.visual_coord = [tw.coord [0]*10, tw.coord[1]*10]
             self.towers.append (tw)
-            self.calcul.need_update = True
             if check:
                 self.append_obstacle(tw)
                 

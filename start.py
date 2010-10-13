@@ -1,5 +1,8 @@
+#!/usr/bin/env/python
 # -*- coding: utf-8 -*-
+
 from lw_dm import MptdScreen
+from pygame.constants import *
 import os, sys, getopt, shelve
 
 TEST = True

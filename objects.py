@@ -128,9 +128,7 @@ class tower(games.Sprite):
             
     def sell(self):
         income = self.levels[self.level][7]
-        #print "will sell this tower for", income
         self.cm.game.castle.modify_money(income)
-        self.cm.game.calcul.rundij()
         self._destroy()
 
     def continue_current_build(self):
@@ -272,7 +270,7 @@ class badguy(games.Sprite):
         self.coord    = (0, 0)        # where the badguy is
         self.visual_coord = [0, 0]
         self.obj    =   [0, 0]        # coord this badguy wants to reach
-        #self.path = None            # the AStar path
+        self.path = None            # the AStar path
         self.next_step = None
         self.size   = 10            # withiin this range, the badguy is hit by bullets
         self.win        = False         # will be true when will reach the objective
@@ -315,7 +313,6 @@ class badguy(games.Sprite):
                     distance = t_distance
         if tower:
             tower._destroy()
-            #self.cm.game.calcul.starting_path = None
             self.kamikaze = False
             self._destroy()
         else:
@@ -323,38 +320,23 @@ class badguy(games.Sprite):
             self.obj = [rnd_tower.coord[0], rnd_tower.coord[1]]
         
     def find_path(self):
-        calcul = self.cm.game.calcul
-        #print calcul.result
-        #print self.coord
-        if not calcul.result:
-            print "calcul pas pret"
-            return
+        if not self.path:
+            print "FIND PATH"
+            self.path = self.cm.game.astar(self.coord[0], self.coord[1])
         if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
             self.win = True
             return
-        if not calcul.result.has_key(self.coord):
-            print "kami"
-            self.kamikaze = True
-            return
-        nstep = calcul.result[self.coord]
-        #print nstep
-        self.next_step = nstep[0] + (nstep[1] * self.cm.game.mapw)
         self.blocked = False
         self.starting = False
-        #self.next_step = self.path.pop(0)
+        self.next_step = self.path.pop(0)
 
     def update(self):
         if not hasattr(self, "init"):
-            #print "pas init"
             return
         self.draw()
         if self.kamikaze:
-            #print "kamikaze"
             self.explode()
-        #print "updateme", self.coord
         if self.life <= 0:
-            #print "die"
-            #print "i die"
             self.cm.post(["badguy_die", self])
             if self.special == "kamikaze":
                 self.explode()
@@ -362,11 +344,9 @@ class badguy(games.Sprite):
                 self._destroy()
             return
         if self.blocked or not self.next_step:
-            print "pas de path"
             self.find_path()
             return
         if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
-            print "win"
             self.win = True
             self.cm.game.castle.modify_life(-1)
             if not self.cm.game.single_player:
@@ -377,7 +357,6 @@ class badguy(games.Sprite):
         self.follow_astar ()
 
     def follow_astar(self):
-        #print self, "next step", self.next_step
         self.move_to_next_step()
         if self.visual_coord[0] / 10.0 == self.next_step%80 and self.visual_coord[1] / 10.0 == self.next_step/80:
             self.coord = (self.next_step%80, self.next_step/80)
@@ -385,15 +364,11 @@ class badguy(games.Sprite):
             self.last_good_step = self.next_step
             #self.next_step = self.path.pop(0)
             self.find_path()
-            #print "pop", len(self.path)
 
     def move_to_next_step(self):
-        #print "move_to_next_step"
         if self.blocked or self.starting:
             return
         if self.cm.game.mapdata[self.next_step] == -1:
-            #self.cm.game.calcul.known_paths[self.next_step%80][self.next_step/80] = None
-            #self.blocked = True
             self.find_path()
             return
         self.blocked = False
