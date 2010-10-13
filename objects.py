@@ -270,7 +270,7 @@ class badguy(games.Sprite):
         self.coord    = (0, 0)        # where the badguy is
         self.visual_coord = [0, 0]
         self.obj    =   [0, 0]        # coord this badguy wants to reach
-        self.path = None            # the AStar path
+        self.path = None            # the astar path
         self.next_step = None
         self.size   = 10            # withiin this range, the badguy is hit by bullets
         self.win        = False         # will be true when will reach the objective

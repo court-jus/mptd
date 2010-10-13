@@ -5,7 +5,6 @@ import pygame
 import objects
 #import globals
 import random, os, sys, getopt, time
-import AStar
 import menu
 import shelve
 from pygame.locals import *
@@ -171,12 +170,6 @@ class mptd:
         def debug(nodes):
             print len(nodes), "nodes searched"
         return astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = debug)
-        
-    def make_road_from_path(self,ASPath):
-        road = []
-        for node in ASPath.getNodes():
-            road.append(node.location.x + node.location.y * self.mapw)
-        return road
         
     def notify(self,event):
         if event [0] == "badguy_die":
