@@ -168,7 +168,8 @@ class mptd:
             return min(dy, dx) * 14 + abs(dy - dx) * 10
 
         def debug(nodes):
-            print len(nodes), "nodes searched"
+            #print len(nodes), "nodes searched"
+            pass
         return astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = debug)
         
     def notify(self,event):
@@ -184,6 +185,7 @@ class mptd:
                 self.nm.send(":earn_money " + str(income) + ":")
             try:
                 self.badguys.remove (event [1])
+                self.cm.unregister(event[1])
             except:
                 pass
         elif event [0] == "quit_game":
@@ -329,6 +331,7 @@ class mptd:
         #if self.update_road:
             #self.road = self.find_road(self.mapdata)
             #self.update_road = False
+        self.cm.post(["new_obstacle", obstacle])
     
     def create_badguy(self,coord,life,speed,special = None):
         #print "creating a badguy at",coord,"with",life,"life and",speed,"speed"
@@ -354,6 +357,7 @@ class mptd:
         bg.next_step = None
         bg.starting = False
         self.dm.need_update = True        #bg = badguy.badguy (self.dm , self.cm)
+        self.cm.register(bg)
         self.badguys.append (bg)
             
     def create_tower(self,coord,check = True):

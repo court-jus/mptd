@@ -321,7 +321,6 @@ class badguy(games.Sprite):
         
     def find_path(self):
         if not self.path:
-            print "FIND PATH"
             self.path = self.cm.game.astar(self.coord[0], self.coord[1])
         if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
             self.win = True
@@ -343,7 +342,7 @@ class badguy(games.Sprite):
             else:
                 self._destroy()
             return
-        if self.blocked or not self.next_step:
+        if self.blocked or not self.next_step or not self.path:
             self.find_path()
             return
         if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
@@ -355,6 +354,10 @@ class badguy(games.Sprite):
             self._destroy()
             return
         self.follow_astar ()
+
+    def notify(self, event):
+        if event[0] == "new_obstacle":
+            self.path = None
 
     def follow_astar(self):
         self.move_to_next_step()
