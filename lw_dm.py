@@ -35,6 +35,7 @@ class MptdScreen(games.Screen):
         self.research_menu_available = self.upgrades_menu_available = self.special_menu_available = False
         self.main_menu.show()
         self.select_menu(self.build_menu)
+        self.model.castle.update_boutons_text(True)
 
         self.tick_listeners = []
 
