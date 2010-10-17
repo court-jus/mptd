@@ -322,8 +322,10 @@ class badguy(games.Sprite):
     def find_path(self):
         if not self.path:
             self.path = self.cm.game.astar(self.coord[0], self.coord[1])
-        if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
-            self.win = True
+            if not self.path:
+                self.kamikaze = True
+                self.explode()
+        if self.wincheck():
             return
         self.blocked = False
         self.starting = False
@@ -334,7 +336,9 @@ class badguy(games.Sprite):
             return
         self.draw()
         if self.kamikaze:
+            print "KAMI explo"
             self.explode()
+            return
         if self.life <= 0:
             self.cm.post(["badguy_die", self])
             if self.special == "kamikaze":
@@ -342,22 +346,27 @@ class badguy(games.Sprite):
             else:
                 self._destroy()
             return
-        if self.blocked or not self.next_step or not self.path:
+        if self.blocked or not self.next_step:
+            self.path = None
             self.find_path()
             return
-        if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
-            self.win = True
-            self.cm.game.castle.modify_life(-1)
-            if not self.cm.game.single_player:
-                self.cm.game.nm.send(":earn_money 1.5 *level:")
-            self.dm.update_bb()
-            self._destroy()
+        if self.wincheck():
             return
         self.follow_astar ()
 
-    def notify(self, event):
-        if event[0] == "new_obstacle":
-            self.path = None
+    def wincheck(self):
+        if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
+            self._win()
+            return True
+        return False
+
+    def _win(self):
+        self.win = True
+        self.cm.game.castle.modify_life(-1)
+        if not self.cm.game.single_player:
+            self.cm.game.nm.send(":earn_money 1.5 *level:")
+        self.dm.update_bb()
+        self._destroy()
 
     def follow_astar(self):
         self.move_to_next_step()
@@ -366,12 +375,15 @@ class badguy(games.Sprite):
             self.visual_coord = [self.coord[0]*10, self.coord[1]*10]
             self.last_good_step = self.next_step
             #self.next_step = self.path.pop(0)
+            if self.wincheck():
+                return
             self.find_path()
 
     def move_to_next_step(self):
         if self.blocked or self.starting:
             return
         if self.cm.game.mapdata[self.next_step] == -1:
+            self.path = None
             self.find_path()
             return
         self.blocked = False

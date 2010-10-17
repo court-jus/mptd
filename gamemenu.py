@@ -17,8 +17,8 @@ class bouton(games.Sprite):
         self.event = event_to_send
         self.img = pygame.image.load(DATAPATH + image_file).convert_alpha()
         self.image =  pygame.Surface((100,120))
-        self.update_text(self.text)
         super(bouton, self).__init__(dm, tlcorner[0], tlcorner[1], self.image)
+        self.update_text(self.text)
         if hidden:
             self.hide()
         
@@ -37,10 +37,11 @@ class bouton(games.Sprite):
         h = 72
         for line in lines:
             (width,height) = self.font.size(line)
-            #decal = (self.rect.width - width) / 2
+            decal = (self.image.get_rect().width - width) / 2
             text = self.font.render(line,1,(255,255,255))
-            #self.image.blit(text,(decal,h))
+            self.image.blit(text,(decal,h))
             h+=height
+        self.replace_image(self.image)
 
     def show(self):
         self.move_to(self.tlcorner)
