@@ -143,23 +143,25 @@ class mptd:
             t = pos - self.mapw
             b = pos + self.mapw
             neighbors = [l, r, t, b]
-            if pos < self.mapw:
+            if pos < self.mapw or self.mapdata[t] == -1:
                 neighbors.remove(t)
-            if pos % self.mapw == 0:
+            if pos % self.mapw == 0 or self.mapdata[l] == -1:
                 neighbors.remove(l)
-            if pos % self.mapw == self.mapw:
+            if pos % self.mapw == self.mapw or self.mapdata[r] == -1:
                 neighbors.remove(r)
-            if pos >= (self.mapw * (self.maph - 1)):
+            if pos >= (self.mapw * (self.maph - 1)) or self.mapdata[b] == -1:
                 neighbors.remove(b)
             return neighbors
 
         def goal(pos):
             return pos == mapgoal
 
-        def cost(a, b):
-            if self.mapdata[b] == -1:
-                return 9999
-            return self.mapdata[b]
+        def cost(from_pos, to_pos):
+            from_y, from_x = from_pos % self.mapw, from_pos / self.mapw
+            to_y, to_x = to_pos % self.mapw, to_pos / self.mapw
+            if to_y - from_y:
+                return 14 * self.mapdata[to_pos]
+            return 10 * self.mapdata[to_pos]
 
         def heuristic(pos):
             x = pos % self.mapw
@@ -169,7 +171,8 @@ class mptd:
 
         def debug(nodes):
             print len(nodes), "nodes searched"
-        return astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = debug)
+
+        return astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = None)
         
     def notify(self,event):
         if event [0] == "badguy_die":
@@ -358,7 +361,6 @@ class mptd:
             
     def create_tower(self,coord,check = True):
         new_tower_coord = [coord [0]/10, coord[1]/10]
-        print "build a %s", new_tower_coord
         if self.can_create_tower(new_tower_coord) or not check:
             self.castle.modify_money(-self.current_tower_creation_mode.cost)
             tw = self.dm.create_tower(self.current_tower_creation_mode)

@@ -275,7 +275,7 @@ class brouzouf_tower_building(building):
     name = "Brouzouf Tw"
     
     def __init__(self,castle,cm):
-        super(brouzouf_tower_building).__init__(castle,cm)
+        super(brouzouf_tower_building, self).__init__(castle, cm)
         self.level = 0
         self.cm.post(["brouzouf_tower_building_built",self])
         
