@@ -44,6 +44,7 @@ class mptd:
         #self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
         self.dm = screen
         self.castle = castle.castle(self.cm, self.single_player)
+        self.astar_cache = {}
         if self.single_player:
             self.castle.update_boutons_text()
             self.dm.update_bb(message = "Bienvenue dans le mode solo")
@@ -136,6 +137,10 @@ class mptd:
             goaly = self.castley
         mapcoord = x + y * self.mapw
         mapgoal  = goalx + goaly * self.mapw
+        ident = (mapcoord, mapgoal)
+        cached = self.astar_cache.get(ident, None)
+        if cached:
+            return cached[:]
 
         def neighbors(pos):
             l = pos - 1
@@ -172,7 +177,9 @@ class mptd:
         def debug(nodes):
             print len(nodes), "nodes searched"
 
-        return astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = None)
+        calculated_path = astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = None)
+        self.astar_cache[ident] = calculated_path
+        return calculated_path[:]
         
     def notify(self,event):
         if event [0] == "badguy_die":
@@ -320,6 +327,7 @@ class mptd:
         size = ((obstacle.size - 1)) - 1
         position = ox + oy * self.mapw
         self.mapdata[position] = -1
+        self.astar_cache = {}
         for a in range(size + 1):
             self.mapdata[position + size + a * self.mapw] = -1
             self.mapdata[position - size + a * self.mapw] = -1
@@ -405,3 +413,4 @@ class mptd:
                 p = x + y * self.mapw
                 self.mapdata[p] = 1
         self.towers.remove(t)
+        self.astar_cache = {}
