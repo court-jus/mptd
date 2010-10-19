@@ -325,6 +325,7 @@ class badguy(games.Sprite):
             if not self.path:
                 self.kamikaze = True
                 self.explode()
+                return
         if self.wincheck():
             return
         self.blocked = False

@@ -147,7 +147,7 @@ class mptd:
                 neighbors.remove(t)
             if pos % self.mapw == 0 or self.mapdata[l] == -1:
                 neighbors.remove(l)
-            if pos % self.mapw == self.mapw or self.mapdata[r] == -1:
+            if pos % self.mapw == self.mapw - 1 or self.mapdata[r] == -1:
                 neighbors.remove(r)
             if pos >= (self.mapw * (self.maph - 1)) or self.mapdata[b] == -1:
                 neighbors.remove(b)
