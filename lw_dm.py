@@ -128,15 +128,19 @@ class MptdScreen(games.Screen):
                 # TODO mouse cursor self.mouse_cursor.set_tc()
                 if not self.shadow:
                     self.shadow = objects.shadow(self, self.model.cm)
+                self.blackboard.update_mode('CREATE')
             elif event [1] == "TOWER_UPGRADE":
                 # TODO mouse cursor self.mouse_cursor.set_tu()
                 self.remove_shadow()
+                self.blackboard.update_mode('UPGRADE')
             elif event [1] == "SELECT" :
                 # TODO mouse cursor self.mouse_cursor.set_select()
                 self.remove_shadow()
+                self.blackboard.update_mode('SELECT')
             elif event [1] == "TOWER_SELL" :
                 # TODO mouse cursor self.mouse_cursor.set_sell()
                 self.remove_shadow()
+                self.blackboard.update_mode('SELL')
         elif (event [0] == "menu_change" and event [1] == "construction") or event [0] == "construire":
             #self.model.cm.post(("mode_change","TOWER_CREATE"))
             self.select_menu(self.build_menu)
@@ -185,6 +189,7 @@ class BlackBoard(games.Object):
     def __init__(self, screen):
         surface = pygame.Surface((SCREEN_WIDTH - GAME_WIDTH,SCREEN_HEIGHT))
         self.font = pygame.font.Font(os.path.join(DATAPATH,"VeraBd.ttf"),16)
+        self.mode = 'MPTD'
         super(BlackBoard, self).__init__(screen, 800, 20, surface)
         
     def update_text(self,text):
@@ -200,14 +205,20 @@ class BlackBoard(games.Object):
             h += height
         self.replace_image(surface)
 
+    def update_mode(self, mode):
+        self.mode = mode
+        self.update_bb()
+
     def update_bb(self, message = None):
         if message:
             self.message = message
+        elif message is not None:
+            self.message = ""
         # Unless the game is initialized, don't go farther
         if not self.screen.model:
             return
         string = ""
-        string += """MPTD\n\nVies :"""
+        string += """%s\n\nVies :""" % (self.mode,)
         string += str(self.screen.model.castle.lifes)
         if self.screen.model.single_player:
             string += """\n\nProchaine vague :"""
