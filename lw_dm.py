@@ -36,6 +36,8 @@ class MptdScreen(games.Screen):
         self.main_menu.show()
         self.select_menu(self.build_menu)
         self.model.castle.update_boutons_text(True)
+        
+        self.selected_stuff = None
 
         self.tick_listeners = []
 
@@ -153,6 +155,15 @@ class MptdScreen(games.Screen):
         elif ((event [0] == "menu_change" and event [1] == "special") or event [0] == "specialiser") and self.special_menu_available:
             #self.model.cm.post(("mode_change","TOWER_SELL"))
             self.select_menu(self.special_menu)
+        elif event [0] == "select_stuff":
+            stuff = event [1]
+            if stuff and isinstance(stuff, objects.Selectable):
+                if self.selected_stuff:
+                    self.selected_stuff.unselect()
+                    self.selected_stuff = None
+                stuff.select()
+                self.selected_stuff = stuff
+                self.update_bb(stuff.get_info())
         return
         if False:
             pass
@@ -170,17 +181,6 @@ class MptdScreen(games.Screen):
                 btnum = event [1] - 1
                 bt = self.menu.boutons_by_num[btnum]
                 self.model.cm.post((bt.event,bt))
-        elif event [0] == "select_stuff":
-            stuff = event [1]
-            if stuff and hasattr(stuff,"selectable"):
-                if self.selected_stuff:
-                    self.selected_stuff.image = self.selected_stuff.image_save.copy()
-                    self.selected_stuff.selected = False
-                stuff.selected = True
-                stuff.image.fill((255,0,0))
-                stuff.image.blit(stuff.image_save,(0,0))
-                self.selected_stuff = stuff
-                self.update_bb(str(stuff.get_info()))
 
     def debug(self, *args, **kwargs):
         print "DEBUG",args,kwargs

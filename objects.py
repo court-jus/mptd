@@ -7,6 +7,21 @@ import random
 
 TEST = True
 
+class Selectable(object):
+    """Every selectable object should subclass this"""
+
+    def __init__(self):
+        self.selected = False
+
+    def select(self):
+        self.selected = True
+
+    def unselect(self):
+        self.selected = False
+
+    def get_info(self):
+        return str(self)
+
 class shadow(games.Sprite):
     """Cursor shadow while in tower create mode"""
     def __init__(self, dm, cm):
@@ -27,7 +42,7 @@ class shadow(games.Sprite):
         super(shadow, self).kill()
         self.cm.unregister(self)
 
-class tower(games.Sprite):
+class tower(games.Sprite, Selectable):
     """ The tower class represents any tower in the game """
     cost = 0
         #life, speed, power, range, image,          upgrade_time, upgrade_price,    sell_income
@@ -41,7 +56,6 @@ class tower(games.Sprite):
         [0, 0, 0, 0,    "tower.png", 0, 0, 0],
         ]
     type = "No type"
-    selectable = True
     def __init__(self, dm, cm, group = None):
         from pygame_dm import DATAPATH, TAR_NORMAL
         self.level = 0
@@ -61,7 +75,6 @@ class tower(games.Sprite):
         self.visual_coord    =    [0, 0]    # where the tower is
         self.isobstacle = True              # badguys can't go through towers
         self.size   =   3
-        self.selected = False
         self.current_construction = None # upgrade status
         self.end_upgrade = None # when will the upgrade be ready ?
         super(tower, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
@@ -100,22 +113,24 @@ class tower(games.Sprite):
 
     def _destroy(self):
         self.cm.game.remove_tower(self)
+        if self.selected:
+            self.cm.game.dm.update_bb(message = False)
         self.kill()
         
     def get_info(self):
-        string = "Tour ("+str(self.type)+") :\n"
-        #string += "Vie : "+str(self.life)+"\n"
-        string += "Vitesse : "+str(self.speed)+"\n"
-        string += "Portee : "+str(self.range)+"\n"
-        string += "Puissance : "+str(self.power)+"\n"
+        string = u"""Tour (%s) %s :
+Vitesse : %s
+Portée : %s
+Puissance : %s""" % (self.type, self.level, self.speed, self.range, self.power)
         if len(self.levels) - 1 > self.level:
-            string += "\nNiveau suivant :\n"
-            string += "- cout : "+str(self.levels[self.level][6])+"\n"
-            string += "- temps : "+str(self.levels[self.level][5])+"\n"
-            #string += "- vie : "+str(self.levels[self.level + 1][0])+"\n"
-            string += "- vitesse : "+str(self.levels[self.level + 1][1])+"\n"
-            string += "- puissance : "+str(self.levels[self.level + 1][2])+"\n"
-            string += "- portee : "+str(self.levels[self.level + 1][3])+"\n"
+            string += u"""
+
+Niveau suivant :
+- coût : %s
+- temps : %s
+- vitesse : %s
+- puissance : %s
+- portée : %s""" % (self.levels[self.level][6], self.levels[self.level][5], self.levels[self.level + 1][1], self.levels[self.level + 1][2], self.levels[self.level + 1][3])
         return string
         
     def upgrade(self):
@@ -148,7 +163,6 @@ class tower(games.Sprite):
                 self.range  = self.levels[self.level][3]
                 self.image  = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
                 self.image_save = self.image.copy()
-                self.dm.update_bb(self.get_info())
                 self.draw()
 
 class basic_tower(tower):
@@ -249,10 +263,9 @@ class brouzouf_tower(tower):
             self.dernier_brouzouf_genre = now
             game.castle.modify_money(2)
        
-class badguy(games.Sprite):
+class badguy(games.Sprite, Selectable):
     """ The badguy class describe every badguy in the game """
 
-    selectable = True
     def __init__(self, dm, cm):
         self.transparent = (255, 0, 255)
         self.color = (50, 50, 50)
@@ -274,7 +287,6 @@ class badguy(games.Sprite):
         self.isobstacle = False         # badguys can go through themselves
         self.blocked = False
         self.starting = True
-        self.selected = False
         self.kamikaze = False        # if kamikaze is True, the badguy will explode and _destroy every tower around him
         self.kamidistance = 90
         self.last_good_step = 0
@@ -415,6 +427,8 @@ class badguy(games.Sprite):
         if self in self.cm.game.badguys:
             self.cm.game.badguys.remove(self)
         self.kill()
+        if self.selected:
+            self.cm.game.dm.update_bb(message = False)
 
     def get_visual_coord(self):
         return [self.visual_coord[0] + 5, self.visual_coord[1] + 5]
