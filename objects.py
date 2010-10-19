@@ -2,6 +2,7 @@
 from livewires import games
 import pygame.image
 import pygame.sprite
+from pygame.locals import RLEACCEL
 import random
 
 TEST = True
@@ -253,12 +254,8 @@ class badguy(games.Sprite):
 
     selectable = True
     def __init__(self, dm, cm):
-        self.image = pygame.Surface((16, 16))
         self.transparent = (255, 0, 255)
-        self.image.set_colorkey(self.transparent)
         self.color = (50, 50, 50)
-        self.rect = self.image.get_rect()
-        self.image_save = self.image.copy()
         self.dm        = dm        # display manager
         self.cm        = cm        # control manager
         self.life    = 0        # life
@@ -283,23 +280,33 @@ class badguy(games.Sprite):
         self.last_good_step = 0
         self.starting_coord = None
         self.birth = pygame.time.get_ticks()
+        self.selected = False
+        self.image = self._create_surface()
+        self.rect = self.image.get_rect()
+        self.image_save = self.image.copy()
         super(badguy, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
         self.draw()
         self.init = True
-        
-    def draw(self):
-        image = pygame.Surface((16, 16))
-        image.fill(self.transparent)
+
+    def _create_surface(self):
+        self.image = pygame.Surface((16,16))
+        self.image.fill(self.transparent)
+        self.image.set_colorkey(self.transparent, RLEACCEL)
         if self.selected:
-            pygame.draw.circle(image, (255, 0, 0), (8, 8), 8, 0)
+            pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 8, 0)
+        else:
+            pygame.draw.circle(self.image, (0, 0, 0), (8, 8), 8, 0)
         #color = pygame.color.multiply(self.color,  ( abs(self.life * 255) / (self.full_life + 1) ) )
         color = self.color
-        pygame.draw.circle(image, color, (8, 8), 6, 0)
+        pygame.draw.circle(self.image, color, (8, 8), 6, 0)
         if self.special == "kamikaze":
-            pygame.draw.circle(image, (255, 0, 0), (8, 8), 3, 0)
+            pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 3, 0)
         elif self.special == "para":
-            pygame.draw.circle(image, (0, 0, 0), (8, 8), 3, 0)
-        self.replace_image(image)
+            pygame.draw.circle(self.image, (0, 0, 0), (8, 8), 3, 0)
+        return self.image.convert()
+        
+    def draw(self):
+        self.replace_image(self._create_surface())
         self.move_to(self.visual_coord)
 
     def explode(self):
