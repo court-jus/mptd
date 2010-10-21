@@ -90,7 +90,8 @@ class bouton_menu(object):
 class build_menu(bouton_menu):
     def __init__(self,dm = None, parent = None, hidden = True):
         super(build_menu, self).__init__(dm, parent, hidden)
-        bt = self.add_bouton("bg_factory","bouton_B.png","build_badguy_factory")
+        if not dm.model.single_player:
+            bt = self.add_bouton("bg_factory","bouton_B.png","build_badguy_factory")
         bt = self.add_bouton("labo","bouton_L.png","build_laboratory")
         bt = self.add_bouton("build_castle_defense","bouton_tw.png","build_castle_defense")
         bt = self.add_bouton("build_brouzouf_tower","bd_brouzouf_tw.png","build_brouzouf_tower")
@@ -99,10 +100,11 @@ class research_menu(bouton_menu):
     def __init__(self,dm = None, parent = None, hidden = True):
         super(research_menu, self).__init__(dm, parent, hidden)
         bt = self.add_bouton("research_defensive_castle","bouton_tw.png","research_defensive_castle")
-        bt = self.add_bouton("research_special","bouton_S.png","research_special")
-        bt = self.add_bouton("research_entry2","bouton_S.png","research_entry2")
-        bt = self.add_bouton("research_entry3","bouton_S.png","research_entry3")
-        bt = self.add_bouton("research_entry4","bouton_S.png","research_entry4")
+        if not dm.model.single_player:
+            bt = self.add_bouton("research_special","bouton_S.png","research_special")
+            bt = self.add_bouton("research_entry2","bouton_S.png","research_entry2")
+            bt = self.add_bouton("research_entry3","bouton_S.png","research_entry3")
+            bt = self.add_bouton("research_entry4","bouton_S.png","research_entry4")
         #self.dm.bulle.register(bt,self.dm.cm.game.castle.infobulle("defensive_castle"))
 
 class upgrades_menu(bouton_menu):
@@ -137,8 +139,9 @@ class main_menu(bouton_menu):
         super(main_menu, self).__init__(dm, parent, hidden)
         bt = self.add_bouton("construire","bmm_construire.png","construire")
         bt = self.add_bouton("rechercher","bmm_rechercher.png","rechercher")
-        bt = self.add_bouton("ameliorer","bmm_ameliorer.png","ameliorer")
-        bt = self.add_bouton("specialiser","bmm_special.png","specialiser")
+        if not dm.model.single_player:
+            bt = self.add_bouton("ameliorer","bmm_ameliorer.png","ameliorer")
+            bt = self.add_bouton("specialiser","bmm_special.png","specialiser")
         
     def add_bouton(self,nom,bouton_img,event):
         x = 60

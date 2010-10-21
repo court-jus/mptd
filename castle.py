@@ -338,10 +338,11 @@ class laboratory(building):
         
     def update_boutons_text(self,recurse = True):
         self.cm.game.dm.research_menu.boutons["research_defensive_castle"].update_text(self.cm.game.make_text("research","defensive_castle"))
-        self.cm.game.dm.research_menu.boutons["research_special"].update_text(self.cm.game.make_text("research","special"))
-        self.cm.game.dm.research_menu.boutons["research_entry2"].update_text(self.cm.game.make_text("research","entry2"))
-        self.cm.game.dm.research_menu.boutons["research_entry3"].update_text(self.cm.game.make_text("research","entry3"))
-        self.cm.game.dm.research_menu.boutons["research_entry4"].update_text(self.cm.game.make_text("research","entry4"))
+        if not self.cm.game.single_player:
+            self.cm.game.dm.research_menu.boutons["research_special"].update_text(self.cm.game.make_text("research","special"))
+            self.cm.game.dm.research_menu.boutons["research_entry2"].update_text(self.cm.game.make_text("research","entry2"))
+            self.cm.game.dm.research_menu.boutons["research_entry3"].update_text(self.cm.game.make_text("research","entry3"))
+            self.cm.game.dm.research_menu.boutons["research_entry4"].update_text(self.cm.game.make_text("research","entry4"))
         if recurse:
             self.castle.update_boutons_text(False)
 
@@ -444,7 +445,8 @@ class castle(object):
         if not self.cm.game.dm.build_menu:
             return
         self.cm.game.dm.build_menu.boutons["labo"].update_text(self.cm.game.make_text("building","laboratory"))
-        self.cm.game.dm.build_menu.boutons["bg_factory"].update_text(self.cm.game.make_text("building","badguy_factory"))
+        if not self.cm.game.single_player:
+            self.cm.game.dm.build_menu.boutons["bg_factory"].update_text(self.cm.game.make_text("building","badguy_factory"))
         self.cm.game.dm.build_menu.boutons["build_castle_defense"].update_text(self.cm.game.make_text("building","castle_defense"))
         self.cm.game.dm.build_menu.boutons["build_brouzouf_tower"].update_text(self.cm.game.make_text("building","brouzouf_tower"))
         l = self.has_building(laboratory)
