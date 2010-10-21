@@ -369,7 +369,8 @@ class mptd:
     def create_tower(self,coord,check = True):
         new_tower_coord = [coord [0]/10, coord[1]/10]
         if self.can_create_tower(new_tower_coord) or not check:
-            self.castle.modify_money(-self.current_tower_creation_mode.cost)
+            if self.current_tower_creation_mode not in (objects.brouzouf_tower, objects.castle_tower):#brouzouf and castle defence are paid before construction
+                self.castle.modify_money(-self.current_tower_creation_mode.cost)
             tw = self.dm.create_tower(self.current_tower_creation_mode)
             tw.set_map_coord(new_tower_coord)
             tw.visual_coord = [tw.coord [0]*10, tw.coord[1]*10]
