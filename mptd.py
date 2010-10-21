@@ -43,7 +43,7 @@ class mptd:
         self.cm.register(screen)
         #self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
         self.dm = screen
-        self.castle = castle.castle(self.cm, self.single_player)
+        self.castle = castle.castle(self.cm)
         self.astar_cache = {}
         if self.single_player:
             self.castle.update_boutons_text()

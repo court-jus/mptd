@@ -434,7 +434,7 @@ class castle(object):
         self.gauge = None
         
         self.buildings = []
-        if mode_solo:
+        if cm.game.single_player:
             self.buildings.append(badguy_factory(self, self.cm))
         self.update_boutons_text()
         
