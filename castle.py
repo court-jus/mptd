@@ -1,6 +1,7 @@
 # castle
 
 import pygame.time
+import random
 
 MAX_LIFE_MULT = 1.5
 
@@ -76,6 +77,9 @@ class badguy_factory(building):
         self.building_time = self.upgrades["build_speed"][self.build_speed_level] * 1000
         self.cm.game.dm.upgrades_menu_available = True
         self.upgrades_boutons = None
+        self.last_cpu_upgrade = None
+        if self.cm.game.single_player:
+            self.last_cpu_upgrade = 0
         self.update_boutons_text()
         
     def prepare_wave(self,wave_type,gauge_stuff):
@@ -238,6 +242,16 @@ class badguy_factory(building):
         self.continue_current_build()
         self.continue_current_upgrade()
         self.continue_current_wave()
+        if self.last_cpu_upgrade is not None and self.last_cpu_upgrade + self.auto_upgrade_frequency < self.cm.game.level:
+            possible_upgrades = []
+            if self.build_speed_level < self.upgrades['build_speed']:
+                possible_upgrades.append(self.upgrade_bgbdspeed)
+            if self.speed_level < self.upgrades['speed']:
+                possible_upgrades.append(self.upgrade_bgspeed)
+            if self.life_level < self.upgrades['life']:
+                possible_upgrades.append(self.upgrade_bglife)
+            random.choice(possible_upgrades)()
+            self.last_cpu_upgrade += self.auto_upgrade_frequency
     
     def notify (self,event):
         if event [0] == "upgrade_bgspeed":
