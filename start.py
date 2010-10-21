@@ -14,7 +14,8 @@ def usage():
     -n          --no-network            No networking (useless)
     -h          --help                  this help
     -s          --server                specify the server IP address
-    -p          --port                  specify the port the server is listening on"""
+    -p          --port                  specify the port the server is listening on
+    -t          --test                  apply test settings "easier and faster" """
 
 def create_default_config(config_file):
     s = shelve.open(config_file)
@@ -100,7 +101,7 @@ def manage_configuration(argv):
             quitter = True
     
     try:
-        opts, args = getopt.getopt(argv, "f1nhs:p:", ["fullscreen","one-player","no-network","help","server","port"])
+        opts, args = getopt.getopt(argv, "f1nhts:p:", ["fullscreen","one-player","no-network","help","test","server","port"])
     except getopt.GetoptError:
         usage()
         sys.exit(2)
@@ -119,6 +120,8 @@ def manage_configuration(argv):
             settings["server"] = arg
         if opt in ("-p", "--port"):
             settings["port"] = int(arg)
+        if opt in ("-t", "--test"):
+            settings["test"] = True
             
     s = shelve.open(config_file)
     s["settings"] = settings

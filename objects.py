@@ -5,8 +5,6 @@ import pygame.sprite
 from pygame.locals import RLEACCEL
 import random
 
-TEST = True
-
 class Selectable(object):
     """Every selectable object should subclass this"""
 
@@ -203,6 +201,16 @@ class castle_tower(tower):
         ]
     
     def __init__(self, dm, cm, group=None):
+        if cm.game.TEST:
+            self.levels = [
+                [50,    40,     300,  10,    "ctower.png" ,    1,            0   ,  120  ],        # cout total : 250
+                [50,    35,     600,  12,    "ctower1.png",    1,            0   ,  220  ],        # cout total : 270
+                [50,    30,    1000,  15,    "ctower2.png",    1,            0   ,  280  ],        # cout total : 310
+                [50,    25,    1500,  20,    "ctower3.png",    1,            0   ,  350  ],        # cout total : 400
+                [50,    20,    2200,  22,    "ctower4.png",    1,            0   ,  450  ],        # cout total : 520
+                [50,    10,    3000,  25,    "ctower5.png",    1,            0   ,  550  ],        # cout total : 670
+                [50,    15,    6000,  35,    "ctower6.png",    1,            0   ,  800  ],        # cout total : 920
+                ]
         super(castle_tower, self).__init__(dm, cm, group)
         self.init = True
         
@@ -229,25 +237,25 @@ class brouzouf_tower(tower):
         [50,   50,  0,  0,  "ctower5.png",     250,   3200   , 8000],        # cout total :10450 
         [50,   20,  0,  0,  "ctower6.png",       0,      0   , 10000],        # cout total :13650
         ]
-    if TEST:
-        levels = [
-            [50, 1000,  0,  0,  "btower0.png",       1,      0   ,  100],        # cout total : 250
-            [50,  800,  0,  0,  "btower1.png",       1,      0   ,  125],        # cout total : 300
-            [50,  600,  0,  0,  "btower2.png",       1,      0   ,  250],        # cout total : 400
-            [50,  500,  0,  0,  "btower3.png",       1,      0   ,  480],        # cout total : 600
-            [50,  400,  0,  0,  "btower4.png",       1,      0   ,  650],        # cout total : 850
-            [50,  300,  0,  0,  "btower5.png",       1,      0   ,  900],        # cout total : 1200
-            [50,  200,  0,  0,  "btower6.png",       1,      0   , 1200],        # cout total : 1700
-            [50,  180,  0,  0,  "ctower.png",        1,      0   , 2000],        # cout total : 2350
-            [50,  150,  0,  0,  "ctower1.png",       1,      0   , 3000],        # cout total : 3250
-            [50,  120,  0,  0,  "ctower2.png",       1,      0   , 4000],        # cout total : 4450
-            [50,  100,  0,  0,  "ctower3.png",       1,      0   , 5000],        # cout total : 5950
-            [50,   80,  0,  0,  "ctower4.png",       1,      0   , 6500],        # cout total : 7950
-            [50,   50,  0,  0,  "ctower5.png",       1,      0   , 8000],        # cout total :10450 
-            [50,   20,  0,  0,  "ctower6.png",       1,      0   , 10000],        # cout total :13650
-            ]
         
     def __init__(self, dm, cm, group=None):
+        if cm.game.TEST:
+            self.levels = [
+                [50, 1000,  0,  0,  "btower0.png",       1,      0   ,  100],        # cout total : 250
+                [50,  800,  0,  0,  "btower1.png",       1,      0   ,  125],        # cout total : 300
+                [50,  600,  0,  0,  "btower2.png",       1,      0   ,  250],        # cout total : 400
+                [50,  500,  0,  0,  "btower3.png",       1,      0   ,  480],        # cout total : 600
+                [50,  400,  0,  0,  "btower4.png",       1,      0   ,  650],        # cout total : 850
+                [50,  300,  0,  0,  "btower5.png",       1,      0   ,  900],        # cout total : 1200
+                [50,  200,  0,  0,  "btower6.png",       1,      0   , 1200],        # cout total : 1700
+                [50,  180,  0,  0,  "ctower.png",        1,      0   , 2000],        # cout total : 2350
+                [50,  150,  0,  0,  "ctower1.png",       1,      0   , 3000],        # cout total : 3250
+                [50,  120,  0,  0,  "ctower2.png",       1,      0   , 4000],        # cout total : 4450
+                [50,  100,  0,  0,  "ctower3.png",       1,      0   , 5000],        # cout total : 5950
+                [50,   80,  0,  0,  "ctower4.png",       1,      0   , 6500],        # cout total : 7950
+                [50,   50,  0,  0,  "ctower5.png",       1,      0   , 8000],        # cout total :10450 
+                [50,   20,  0,  0,  "ctower6.png",       1,      0   , 10000],        # cout total :13650
+                ]
         super(brouzouf_tower, self).__init__(dm, cm, group)
         self.init = True
         self.dernier_brouzouf_genre = 0

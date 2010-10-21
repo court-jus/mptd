@@ -13,7 +13,6 @@ from astar import astar
 
 ECART_MIN_ENTRE_BG = 150    # ms between two badguys
 ECART_MIN_ENTRE_VAGUES = 30000    # ms between two forced waves
-TEST = True
 
 class mptd:
     """ this is the main class for mptd """
@@ -21,6 +20,7 @@ class mptd:
     def __init__(self, screen, settings): #serveur_hostname,serveur_port,single_player,fullscreen):
         #pygame.init()
         self.settings = settings # server_ip,server_port,fullscreen,solo
+        self.TEST = self.settings.get("test", False)
         #print self.settings
         self.mapw       =   80
         self.maph       =   60

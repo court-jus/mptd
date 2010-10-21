@@ -4,8 +4,6 @@ import pygame.time
 
 MAX_LIFE_MULT = 1.5
 
-TEST = True
-            
 class building(object):
     
     name = "Building"
@@ -29,14 +27,9 @@ class badguy_factory(building):
     name = "Usine"
     bt_name = "bg_factory"
     upgrades = {
-        "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.36 , 0.45 ],
-        "life"        : [20   , 40   , 75   , 100  , 200  , 300  , 400  , 600  , 800  , 950  , 1200 ],
-        "build_speed" : [10   , 8    , 5    , 2    , 1    , 0.9  , 0.8  , 0.6  , 0.5  , 0.4  , 0.2  ],
-        }
-    upgrades = {
-        "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.36 , 0.45 ],
-        "life"        : [50   , 40   , 75   , 100  , 200  , 300  , 400  , 600  , 800  , 950  , 1200 ],
-        "build_speed" : [0.5 for a in range(10)],
+        "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.32 , 0.35 , 0.37 , 0.4  , 0.45 ],
+        "life"        : [10   , 20   , 40   , 50   , 75   , 100  , 200  , 300  , 400  , 500  , 600  , 800  , 950  , 1200 ],
+        "build_speed" : [3    , 2    , 1.5  , 1.0  , 0.9  , 0.8  , 0.7  , 0.6  , 0.5  , 0.4  , 0.3  , 0.2  , 0.1  , 0.05 ],
         }
         
     upgrades_names = {
@@ -51,14 +44,19 @@ class badguy_factory(building):
         "para" :     [ 50,  2 ],
         "kamikaze" : [ 100, 5 ],
         }
-        
-    if TEST:
-        waves = {
-            "para" :     [ 0,  0.1 ],
-            "kamikaze" : [ 0, 0.11 ],
-            }
+    auto_upgrade_frequency = 20 # upgrade every 20 level (kill) 
     
     def __init__(self,castle,cm):
+        if cm.game.TEST:
+            self.upgrades = {
+                "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.32 , 0.35 , 0.37 , 0.4  , 0.45 ],
+                "life"        : [50   , 20   , 40   , 50   , 75   , 100  , 200  , 300  , 400  , 500  , 600  , 800  , 950  , 1200 ],
+                "build_speed" : [0.5 for a in range(10)],
+                }
+            self.waves = {
+                "para" :     [ 0,  0.1 ],
+                "kamikaze" : [ 0, 0.11 ],
+                }
         super(badguy_factory, self).__init__(castle,cm)
         self.castle = castle
         self.begin_build = None
@@ -294,14 +292,6 @@ class laboratory(building):
         "entry4"          : [6000,   ["entry3"], [], 120 ],
         }
     
-    if TEST:
-        technos = {
-            "defensive_castle": [0,    [], [], 1  ],
-            "special"         : [0,    [], [castle_defense], 1],
-            "entry2"          : [0,   [], [], 1 ],
-            "entry3"          : [0,   ["entry2"], [], 1 ],
-            "entry4"          : [0,   ["entry3"], [], 1 ],
-            }
         
     technos_names = {
         "defensive_castle" : "Catapulte",
@@ -315,6 +305,14 @@ class laboratory(building):
     bt_name = "labo"
         
     def __init__(self,castle,cm):
+        if cm.game.TEST:
+            self.technos = {
+                "defensive_castle": [0,    [], [], 1  ],
+                "special"         : [0,    [], [castle_defense], 1],
+                "entry2"          : [0,   [], [], 1 ],
+                "entry3"          : [0,   ["entry2"], [], 1 ],
+                "entry4"          : [0,   ["entry3"], [], 1 ],
+                }
         super(laboratory, self).__init__(castle,cm)
         self.level = 0
         self.castle = castle
@@ -406,15 +404,14 @@ class castle:
         "brouzouf_tower" :  [250, 15, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
         }
         
-    if TEST:
-        known_buildings = {
-            "badguy_factory" :  [0, 1, [], [], badguy_factory ,"Usine"],
-            "laboratory"     :  [0, 1, [badguy_factory], [], laboratory ,"Labo"],
-            "castle_defense" :  [0, 1, [], ["defensive_castle"], castle_defense ,"Donjon"],
-            "brouzouf_tower" :  [0, 1, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
-            }
-            
-    def __init__(self,cm, mode_solo = None):
+    def __init__(self,cm):
+        if cm.game.TEST:
+            self.known_buildings = {
+                "badguy_factory" :  [0, 1, [], [], badguy_factory ,"Usine"],
+                "laboratory"     :  [0, 1, [badguy_factory], [], laboratory ,"Labo"],
+                "castle_defense" :  [0, 1, [], ["defensive_castle"], castle_defense ,"Donjon"],
+                "brouzouf_tower" :  [0, 1, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
+                }
         self.cm = cm
         #self.dm = self.cm.game.dm
         self.cm.register(self)
