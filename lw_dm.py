@@ -42,7 +42,7 @@ class MptdScreen(games.Screen):
         self.tick_listeners = []
 
     def select_menu(self, new_menu):
-        print "sleect menu",new_menu
+        #print "sleect menu",new_menu
         if self.menu:
             self.menu.hide()
         self.menu = new_menu
@@ -108,8 +108,8 @@ class MptdScreen(games.Screen):
         self.shadow = None
     
     def notify(self, event):
-        if event[0] != "mouse_move":
-            print "notify event",event
+        #if event[0] != "mouse_move":
+        #    print "notify event",event
         if event [0] == "toggle_fullscreen":
             pygame.display.toggle_fullscreen()
         elif event [0] == "badguy_count_update":
@@ -119,11 +119,11 @@ class MptdScreen(games.Screen):
         elif event [0] == "clic":
             ev = self.menu.clic(event)
             if ev:
-                print "current menu sent",ev
+                #print "current menu sent",ev
                 self.model.cm.post(ev)
             ev = self.main_menu.clic(event)
             if ev:
-                print "main menu sent",ev
+                #print "main menu sent",ev
                 self.model.cm.post(ev)
         elif event [0] == "mode_change":
             if event [1] == "TOWER_CREATE":

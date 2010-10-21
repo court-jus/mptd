@@ -57,6 +57,7 @@ class tower(games.Sprite, Selectable):
     def __init__(self, dm, cm, group = None):
         from pygame_dm import DATAPATH, TAR_NORMAL
         self.level = 0
+        self.selected = False
         self.image_name  = self.levels[self.level][4]
         self.image = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
         self.rect = self.image.get_rect()
@@ -364,7 +365,6 @@ class badguy(games.Sprite, Selectable):
             return
         self.draw()
         if self.kamikaze:
-            print "KAMI explo"
             self.explode()
             return
         if self.life <= 0:

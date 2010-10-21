@@ -407,7 +407,7 @@ class laboratory(building):
         if self.begin_build:
             self.continue_current_build()
             
-class castle:
+class castle(object):
     
     #   "name" : [ price, time, needs (build), needs (science), class ,"hr name"],
     
@@ -427,7 +427,6 @@ class castle:
                 "brouzouf_tower" :  [0, 1, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
                 }
         self.cm = cm
-        #self.dm = self.cm.game.dm
         self.cm.register(self)
         self.lifes = 100
         self.money = 2500

@@ -186,6 +186,7 @@ class mptd:
             #if self.single_player:
             self.level += 1
             self.cm.post(("level_up",self.level))
+            print "level up",self.level
             self.castle.modify_money(max((self.level / 25),1))
             self.dm.update_bb()
             if not self.single_player:
@@ -237,7 +238,6 @@ class mptd:
                             "coord" : coord,
                             }
                         self.waves.append(wave)
-                        print self.waves
                     else:
                         self.nm.send(":send_badguys " + str(numb) + " " + str(b.badguys_life) + " " + str(b.badguys_speed) + " None " + str(coord[0]) + " " + str(coord[1]) + ":")
                     b.badguys_ready = 0
@@ -342,7 +342,6 @@ class mptd:
             #self.update_road = False
     
     def create_badguy(self,coord,life,speed,special = None):
-        #print "creating a badguy at",coord,"with",life,"life and",speed,"speed"
         b = self.castle.has_building(castle.badguy_factory)
         bg = self.dm.create_badguy()
         bg.life = life
