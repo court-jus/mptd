@@ -430,7 +430,7 @@ class castle(object):
         self.cm = cm
         self.cm.register(self)
         self.lifes = 100
-        self.money = 2500
+        self.money = 800
         self.gauge = None
         
         self.buildings = []
