@@ -1,24 +1,26 @@
-import castle, calcul_dij
+# -*- coding: utf-8 -*-
+import castle
 import pygame_dm, cm, nm
 import pygame
 import objects
 #import globals
 import random, os, sys, getopt, time
-import AStar
 import menu
 import shelve
 from pygame.locals import *
+from livewires import games
+from astar import astar
 
 ECART_MIN_ENTRE_BG = 150    # ms between two badguys
 ECART_MIN_ENTRE_VAGUES = 30000    # ms between two forced waves
-TEST = True
 
 class mptd:
     """ this is the main class for mptd """
 
-    def __init__(self,settings): #serveur_hostname,serveur_port,single_player,fullscreen):
-        pygame.init()
+    def __init__(self, screen, settings): #serveur_hostname,serveur_port,single_player,fullscreen):
+        #pygame.init()
         self.settings = settings # server_ip,server_port,fullscreen,solo
+        self.TEST = self.settings.get("test", False)
         #print self.settings
         self.mapw       =   80
         self.maph       =   60
@@ -32,17 +34,17 @@ class mptd:
             #for y in range(27,34):
                 #self.mapdata[x + y * self.mapw] = 9
         now = pygame.time.get_ticks
-        self.calcul = calcul_dij.calcul_dij(self.mapdata,self.mapw,self.maph,(self.castlex,self.castley))
-        #p = self.calcul.calcul_unique((0,0),(40,30))
-        #self.calcul.starting_path = self.make_road_from_path(p)
         self.single_player = settings["solo"]
         self.enemy_info = {}
         self.level = 1
         self.current_tower_creation_mode = objects.basic_tower
         self.cm        = cm.cm (self.settings["keys"],self.settings["touches_boutons"])            # create a new control manager
         self.cm.register_game (self)                # register self to cm        
-        self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
-        self.castle = castle.castle(self.cm, self.single_player)
+        self.cm.register(screen)
+        #self.dm        = pygame_dm.pygame_dm (self.cm, settings["fullscreen"], self.single_player)        # create a new display manager
+        self.dm = screen
+        self.castle = castle.castle(self.cm)
+        self.astar_cache = {}
         if self.single_player:
             self.castle.update_boutons_text()
             self.dm.update_bb(message = "Bienvenue dans le mode solo")
@@ -62,8 +64,6 @@ class mptd:
         self.towers    = []
         self.badguys    = []
         self.objects    = [self.towers , self.badguys]
-        
-                
                 
         self.current_wave = {
             "number":   0,
@@ -72,12 +72,10 @@ class mptd:
             "special" : None,
             "coord" : (0,0),
             }
-        self.calcul.start()
-        #print self.calcul.starting_path
         self.update_road = False
         self.cm.post(["mode_change","SELECT"])
         #self.road = self.find_road(self.mapdata[:])              # the "road" is the shortest path from (0,0) to the castle (this road must be kept open)
-#        self.castle.build("badguy_factory",1000,0.1,castle.badguy_factory)
+        #self.castle.build("badguy_factory",1000,0.1,castle.badguy_factory)
         
     def run(self):
         #self.dm.display.start()     # draw to screen in a thread
@@ -115,39 +113,80 @@ class mptd:
                     text += need.name + " "
         return text
 
-    def mainloop(self):
-        self.running = True
-        self.dm.update_bb()
+    def tick(self):
+        #self.dm.update_bb()
 
-        while self.running:
-            now = pygame.time.get_ticks()
-            b = self.castle.has_building(castle.badguy_factory)
-            self.dm.draw()         # draw to screen
-            self.dm.update()        # update sprites (badguys, towers...)
-            self.castle.update()
-            if self.current_wave["number"] > 0 and now > self.last_bg_sent + ECART_MIN_ENTRE_BG:
-                self.last_bg_sent = now
-                self.send_badguys(0,True)
-            elif len(self.waves) > 0:
-                self.current_wave = self.waves.pop(0)
-                self.colors.append(self.colors.pop(0)) # rotation des couleurs
-            if now > self.last_wave_sent + ECART_MIN_ENTRE_VAGUES and b and b.badguys_ready >= 20:
-                self.cm.post(("send_badguys",None))
-            if self.castle.lifes <= 0:
-                self.cm.post(["quit_game",None])
-        print "Game Over"        
-        
-    def make_road_from_path(self,ASPath):
-        road = []
-        for node in ASPath.getNodes():
-            road.append(node.location.x + node.location.y * self.mapw)
-        return road
+        now = pygame.time.get_ticks()
+        b = self.castle.has_building(castle.badguy_factory)
+        self.castle.update()
+        if self.current_wave["number"] > 0 and now > self.last_bg_sent + ECART_MIN_ENTRE_BG:
+            self.last_bg_sent = now
+            self.send_badguys(0,True)
+        elif len(self.waves) > 0:
+            self.current_wave = self.waves.pop(0)
+            self.colors.append(self.colors.pop(0)) # rotation des couleurs
+        if (now > self.last_wave_sent + ECART_MIN_ENTRE_VAGUES and b and b.badguys_ready >= 20):
+            self.cm.post(("send_badguys",None))
+        if self.castle.lifes <= 0:
+            self.cm.post(["quit_game",None])
+
+    def astar(self, x, y, goalx = None, goaly = None):
+        if not goalx:
+            goalx = self.castlex
+        if not goaly:
+            goaly = self.castley
+        mapcoord = x + y * self.mapw
+        mapgoal  = goalx + goaly * self.mapw
+        ident = (mapcoord, mapgoal)
+        cached = self.astar_cache.get(ident, None)
+        if cached:
+            return cached[:]
+
+        def neighbors(pos):
+            l = pos - 1
+            r = pos + 1
+            t = pos - self.mapw
+            b = pos + self.mapw
+            neighbors = [l, r, t, b]
+            if pos < self.mapw or self.mapdata[t] == -1:
+                neighbors.remove(t)
+            if pos % self.mapw == 0 or self.mapdata[l] == -1:
+                neighbors.remove(l)
+            if pos % self.mapw == self.mapw - 1 or self.mapdata[r] == -1:
+                neighbors.remove(r)
+            if pos >= (self.mapw * (self.maph - 1)) or self.mapdata[b] == -1:
+                neighbors.remove(b)
+            return neighbors
+
+        def goal(pos):
+            return pos == mapgoal
+
+        def cost(from_pos, to_pos):
+            from_y, from_x = from_pos % self.mapw, from_pos / self.mapw
+            to_y, to_x = to_pos % self.mapw, to_pos / self.mapw
+            if to_y - from_y:
+                return 14 * self.mapdata[to_pos]
+            return 10 * self.mapdata[to_pos]
+
+        def heuristic(pos):
+            x = pos % self.mapw
+            y = pos / self.mapw
+            dy, dx = abs(goaly - y), abs(goalx - x)
+            return min(dy, dx) * 14 + abs(dy - dx) * 10
+
+        def debug(nodes):
+            print len(nodes), "nodes searched"
+
+        calculated_path = astar(mapcoord, neighbors, goal, 0, cost, heuristic, debug = None)
+        self.astar_cache[ident] = calculated_path
+        return calculated_path[:]
         
     def notify(self,event):
         if event [0] == "badguy_die":
             #if self.single_player:
             self.level += 1
             self.cm.post(("level_up",self.level))
+            print "level up",self.level
             self.castle.modify_money(max((self.level / 25),1))
             self.dm.update_bb()
             if not self.single_player:
@@ -162,10 +201,8 @@ class mptd:
             self.running = False
             if self.nm:
                 self.nm.stop()
-            #if self.calcul:
-                #self.calcul.stop()
-            if self.dm and hasattr(self.dm.display,"stop"):
-                self.dm.display.stop()
+            if self.dm:
+                self.dm.quit()
         elif event [0] == "clic":
             if event[1][0] == "TOWER_CREATE":
                 if self.castle.money >= self.current_tower_creation_mode.cost:
@@ -290,6 +327,7 @@ class mptd:
         size = ((obstacle.size - 1)) - 1
         position = ox + oy * self.mapw
         self.mapdata[position] = -1
+        self.astar_cache = {}
         for a in range(size + 1):
             self.mapdata[position + size + a * self.mapw] = -1
             self.mapdata[position - size + a * self.mapw] = -1
@@ -304,7 +342,6 @@ class mptd:
             #self.update_road = False
     
     def create_badguy(self,coord,life,speed,special = None):
-        #print "creating a badguy at",coord,"with",life,"life and",speed,"speed"
         b = self.castle.has_building(castle.badguy_factory)
         bg = self.dm.create_badguy()
         bg.life = life
@@ -327,19 +364,17 @@ class mptd:
         bg.next_step = None
         bg.starting = False
         self.dm.need_update = True        #bg = badguy.badguy (self.dm , self.cm)
-        #bg.astar_calcul()
         self.badguys.append (bg)
             
     def create_tower(self,coord,check = True):
         new_tower_coord = [coord [0]/10, coord[1]/10]
-        print "build a %s", new_tower_coord
         if self.can_create_tower(new_tower_coord) or not check:
-            self.castle.modify_money(-self.current_tower_creation_mode.cost)
+            if self.current_tower_creation_mode not in (objects.brouzouf_tower, objects.castle_tower):#brouzouf and castle defence are paid before construction
+                self.castle.modify_money(-self.current_tower_creation_mode.cost)
             tw = self.dm.create_tower(self.current_tower_creation_mode)
             tw.set_map_coord(new_tower_coord)
             tw.visual_coord = [tw.coord [0]*10, tw.coord[1]*10]
             self.towers.append (tw)
-            self.calcul.need_update = True
             if check:
                 self.append_obstacle(tw)
                 
@@ -378,129 +413,4 @@ class mptd:
                 p = x + y * self.mapw
                 self.mapdata[p] = 1
         self.towers.remove(t)
-
-def usage():
-    print """Options :
-    -f          --fullscreen            Fullscreen
-    -1          --one-player            Single player
-    -n          --no-network            No networking (useless)
-    -h          --help                  this help
-    -s          --server                specify the server IP address
-    -p          --port                  specify the port the server is listening on"""
-
-def create_default_config(config_file):
-    s = shelve.open(config_file)
-    settings = {
-        "server_ip"  : "localhost",
-        "server_port": "8524",
-        "fullscreen" : False,
-        "solo"       : True
-        }
-    keys = {
-                "fullscreen":   K_f,
-                "quit"      :   K_ESCAPE,
-                "badguy"    :   K_RETURN,
-                "tower"     :   K_t,
-                "upgrade"   :   K_a,
-                "select"    :   K_SPACE,
-                "sell_tw"   :   K_v,
-                "construction" : K_c,
-                "research" : K_r,
-                "upgrades" : K_m,
-                "special"  : K_s,
-                "bouton1"  : K_F1,
-                "bouton2"  : K_F2,
-                "bouton3"  : K_F3,
-                "bouton4"  : K_F4,
-                "bouton5"  : K_F5,
-                "bouton6"  : K_F6,
-                "bouton7"  : K_F7,
-                "bouton8"  : K_F8,
-                "bouton9"  : K_F9,
-                "bouton10"  : K_F10,
-                "menu_down" : K_DOWN,
-                "menu_up" : K_UP,
-                "menu_select" : K_RETURN,
-                }
-    settings["keys"] = keys
-    settings["touches_boutons"] = [keys[a] for a in keys if a[:6] == "bouton"]
-    s["settings"] = settings
-    s.close()
-
-def main(argv):
-    
-    config_file = "mptd.conf"
-    if not os.path.exists(config_file):
-        create_default_config(config_file)
-    s = shelve.open(config_file)
-    settings = s["settings"]
-    s.close()
-    
-    if not TEST:
-        mainmenu = menu.menu(settings["keys"])
-        optionsmenu = menu.menu(settings["keys"])
-        touchesmenu = menu.menu(settings["keys"])
-        mainmenu.add_item(menu.item("Menu principal",None))
-        mainmenu.add_item(menu.item("Lancer le jeu solo",("solo",None)))
-        mainmenu.add_item(menu.item("Lancer le jeu multijoueur",("multi",None)))
-        mainmenu.add_item(menu.item("Options",("menu",optionsmenu)))
-        mainmenu.add_item(menu.item("Quitter",("quit",None)))
-        
-        optionsmenu.add_item(menu.item("Options",None))
-        optionsmenu.add_item(menu.item("Activer le plein ecran",("toggle fullscreen",settings)))
-        optionsmenu.add_item(menu.item("Changer l'IP du serveur",("input server_ip",settings)))
-        optionsmenu.add_item(menu.item("Changer le port du serveur",("input server_port",settings)))
-        optionsmenu.add_item(menu.item("Configurer les touches",("menu",touchesmenu)))
-        optionsmenu.add_item(menu.item("Retour au menu",("quit",None)))
-        
-        touchesmenu.add_item(menu.item("Configuration des touches",None))
-        liste_touches = [k for k in settings["keys"]]
-        liste_touches.sort()
-        for k in liste_touches:
-            touchesmenu.add_item(menu.item(menu.key_name[k],("keyconf " + k, settings)))
-        
-        result = mainmenu.mainloop()
-    else:
-        result = ['solo',]
-    quitter = False
-    if result:
-        if result[0] == "solo":
-            settings["solo"] = True
-        if result[0] == "multi":
-            settings["solo"] = False
-        if result[0] == "quit":
-            quitter = True
-    
-    try:
-        opts, args = getopt.getopt(argv, "f1nhs:p:", ["fullscreen","one-player","no-network","help","server","port"])
-    except getopt.GetoptError:
-        usage()
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ("-f", "--fullscreen"):
-            settings["fullscreen"] = True
-        if opt in ("-1", "--one-player"):
-            settings["server"] = None
-            settings["solo"] = True
-        if opt in ("-n", "--no-network"):
-            settings["server"] = None
-        if opt in ("-h", "--help"):
-            usage()
-            sys.exit()
-        if opt in ("-s", "--server"):
-            settings["server"] = arg
-        if opt in ("-p", "--port"):
-            settings["port"] = int(arg)
-            
-    s = shelve.open(config_file)
-    s["settings"] = settings
-    s.close()
-    model = None
-    if not quitter:
-        model = mptd(settings)
-        model.run()
-    print model.calcul.times
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
+        self.astar_cache = {}

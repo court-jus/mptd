@@ -1,27 +1,63 @@
+# -*- coding: utf-8 -*-
+from livewires import games
 import pygame.image
 import pygame.sprite
+from pygame.locals import RLEACCEL
+import random
 
-TEST = True
+class Selectable(object):
+    """Every selectable object should subclass this"""
 
-class tower(pygame.sprite.Sprite):
+    def __init__(self):
+        self.selected = False
+
+    def select(self):
+        self.selected = True
+
+    def unselect(self):
+        self.selected = False
+
+    def get_info(self):
+        return str(self)
+
+class shadow(games.Sprite):
+    """Cursor shadow while in tower create mode"""
+    def __init__(self, dm, cm):
+        from pygame_dm import DATAPATH
+        self.cm = cm
+        cm.register(self)
+        x = y = 0
+        image = pygame.Surface((30, 30))
+        self.image = pygame.image.load(DATAPATH + "tower_shadow.png").convert_alpha()
+        super(shadow, self).__init__(dm, x, y, self.image)
+
+    def notify(self, event):
+        if event[0] == "mouse_move":
+            self._erase()
+            self.move_to(event[1][0]/10*10, event[1][1]/10*10)
+
+    def kill(self):
+        super(shadow, self).kill()
+        self.cm.unregister(self)
+
+class tower(games.Sprite, Selectable):
     """ The tower class represents any tower in the game """
     cost = 0
         #life, speed, power, range, image,          upgrade_time, upgrade_price,    sell_income
     levels = [
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
-        [0, 0, 0, 0,    "tower.png", 0,0,0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
+        [0, 0, 0, 0,    "tower.png", 0, 0, 0],
         ]
     type = "No type"
-    selectable = True
-    def __init__(self,dm,cm, group = None):
+    def __init__(self, dm, cm, group = None):
         from pygame_dm import DATAPATH, TAR_NORMAL
-        super(tower, self).__init__(group)
         self.level = 0
+        self.selected = False
         self.image_name  = self.levels[self.level][4]
         self.image = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
         self.rect = self.image.get_rect()
@@ -34,22 +70,28 @@ class tower(pygame.sprite.Sprite):
         self.cm        =    cm    # control manager
         self.last_launched_bullet = 0
         self.target    =    TAR_NORMAL # what target will the tower prefer
-        self.coord    =    [0,0]    # where the tower is
-        self.visual_coord    =    [0,0]    # where the tower is
+        self.coord    =    [0, 0]    # where the tower is
+        self.visual_coord    =    [0, 0]    # where the tower is
         self.isobstacle = True              # badguys can't go through towers
         self.size   =   3
-        self.selected = False
         self.current_construction = None # upgrade status
         self.end_upgrade = None # when will the upgrade be ready ?
+        super(tower, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
+        self.draw()
+        self.init = True
 
-    def set_map_coord(self,new_tower_coord):
+    def draw(self):
+        self.replace_image(self.image)
+        self.move_to(self.visual_coord)
+
+    def set_map_coord(self, new_tower_coord):
         self.coord = new_tower_coord
         self.visual_coord = [self.coord [0]*10, self.coord[1]*10]
         self.rect.center = (self.visual_coord[0], self.visual_coord[1])
-        self.dm.need_update = True
+        self.draw()
 
     def update(self):
-        if not hasattr(self,"init"):
+        if not hasattr(self, "init"):
             return
         if self.current_construction:
             self.continue_current_build()
@@ -61,32 +103,33 @@ class tower(pygame.sprite.Sprite):
                     if not bg.starting:
                         distance = ((bg.coord[0] - self.coord[0])**2.0 + (bg.coord[1] - self.coord[1])**2.0)**(1.0/2.0)
                         if distance <= self.range:
-                            self.dm.create_bullet(self,bg)
+                            self.dm.create_bullet(self, bg)
                             self.last_launched_bullet = now
                             break
 
     def get_visual_coord(self):
-	return self.visual_coord[:]
+        return self.visual_coord[:]
 
-    def destroy(self):
+    def _destroy(self):
         self.cm.game.remove_tower(self)
+        if self.selected:
+            self.cm.game.dm.update_bb(message = False)
         self.kill()
-        self.dm.need_update = True
         
     def get_info(self):
-        string = "Tour ("+str(self.type)+") :\n"
-        #string += "Vie : "+str(self.life)+"\n"
-        string += "Vitesse : "+str(self.speed)+"\n"
-        string += "Portee : "+str(self.range)+"\n"
-        string += "Puissance : "+str(self.power)+"\n"
+        string = u"""Tour (%s) %s :
+Vitesse : %s
+Portée : %s
+Puissance : %s""" % (self.type, self.level, self.speed, self.range, self.power)
         if len(self.levels) - 1 > self.level:
-            string += "\nNiveau suivant :\n"
-            string += "- cout : "+str(self.levels[self.level][6])+"\n"
-            string += "- temps : "+str(self.levels[self.level][5])+"\n"
-            #string += "- vie : "+str(self.levels[self.level + 1][0])+"\n"
-            string += "- vitesse : "+str(self.levels[self.level + 1][1])+"\n"
-            string += "- puissance : "+str(self.levels[self.level + 1][2])+"\n"
-            string += "- portee : "+str(self.levels[self.level + 1][3])+"\n"
+            string += u"""
+
+Niveau suivant :
+- coût : %s
+- temps : %s
+- vitesse : %s
+- puissance : %s
+- portée : %s""" % (self.levels[self.level][6], self.levels[self.level][5], self.levels[self.level + 1][1], self.levels[self.level + 1][2], self.levels[self.level + 1][3])
         return string
         
     def upgrade(self):
@@ -96,19 +139,16 @@ class tower(pygame.sprite.Sprite):
             self.cm.game.castle.modify_money(-self.levels [self.level][6])
             self.current_construction = "upgrade"
             self.end_upgrade = pygame.time.get_ticks() + self.levels [self.level][5] * 1000
-            self.gauge = self.dm.create_gauge(pygame.time.get_ticks(),self.end_upgrade,self)
+            self.gauge = self.dm.create_gauge(pygame.time.get_ticks(), self.end_upgrade, self)
             
     def sell(self):
         income = self.levels[self.level][7]
-        #print "will sell this tower for",income
         self.cm.game.castle.modify_money(income)
-        self.cm.game.calcul.rundij()
-        self.destroy()
+        self._destroy()
 
     def continue_current_build(self):
         from pygame_dm import DATAPATH
         self.gauge.update_gauge(pygame.time.get_ticks())
-        self.dm.need_update = True
         if pygame.time.get_ticks() >= self.end_upgrade:
             self.gauge.kill()
             self.current_construction = None
@@ -121,9 +161,8 @@ class tower(pygame.sprite.Sprite):
                 self.power  = self.levels[self.level][2]
                 self.range  = self.levels[self.level][3]
                 self.image  = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
-                self.dm.need_update = True
                 self.image_save = self.image.copy()
-                self.dm.update_bb(self.get_info())
+                self.draw()
 
 class basic_tower(tower):
     
@@ -133,15 +172,15 @@ class basic_tower(tower):
     levels = [
         [50,    500,     3 ,  5,    "tower.png",   2,             5   , 3   ],        # cout total : 5
         [50,    400,     6 ,  5,    "tower1.png",   4,            10  , 6   ],        # cout total : 10
-        [50,    300,     10,  6,    "tower2.png",   8,            20  ,12   ],        # cout total : 20
-        [50,    200,     15,  7,    "tower3.png",   15,           50  ,30   ],        # cout total : 40
-        [50,    150,     22,  8,    "tower4.png",   30,           75  ,70   ],        # cout total : 90
-        [50,    90,     30,  9,    "tower5.png",   60,            80  ,100   ],        # cout total : 165
-        [50,    40,     60,  10,    "tower6.png",   0,             0  ,180   ],        # cout total : 245
+        [50,    300,     10,  6,    "tower2.png",   8,            20  , 12   ],        # cout total : 20
+        [50,    200,     15,  7,    "tower3.png",   15,           50  , 30   ],        # cout total : 40
+        [50,    150,     22,  8,    "tower4.png",   30,           75  , 70   ],        # cout total : 90
+        [50,    90,     30,  9,    "tower5.png",   60,            80  , 100   ],        # cout total : 165
+        [50,    40,     60,  10,    "tower6.png",   0,             0  , 180   ],        # cout total : 245
         ]
         
-    def __init__(self,dm,cm,group = None):
-        tower.__init__(self,dm,cm,group)
+    def __init__(self, dm, cm, group = None):
+        super(basic_tower, self).__init__(dm, cm, group)
         self.init = True
        
         
@@ -162,8 +201,18 @@ class castle_tower(tower):
         [50,    15,     600,  35,    "ctower6.png",   0,             0   ,  800  ],        # cout total : 920
         ]
     
-    def __init__(self,dm,cm,group=None):
-        tower.__init__(self,dm,cm,group)
+    def __init__(self, dm, cm, group=None):
+        if cm.game.TEST:
+            self.levels = [
+                [50,    40,     300,  10,    "ctower.png" ,    1,            0   ,  120  ],        # cout total : 250
+                [50,    35,     600,  12,    "ctower1.png",    1,            0   ,  220  ],        # cout total : 270
+                [50,    30,    1000,  15,    "ctower2.png",    1,            0   ,  280  ],        # cout total : 310
+                [50,    25,    1500,  20,    "ctower3.png",    1,            0   ,  350  ],        # cout total : 400
+                [50,    20,    2200,  22,    "ctower4.png",    1,            0   ,  450  ],        # cout total : 520
+                [50,    10,    3000,  25,    "ctower5.png",    1,            0   ,  550  ],        # cout total : 670
+                [50,    15,    6000,  35,    "ctower6.png",    1,            0   ,  800  ],        # cout total : 920
+                ]
+        super(castle_tower, self).__init__(dm, cm, group)
         self.init = True
         
 class brouzouf_tower(tower):
@@ -187,33 +236,33 @@ class brouzouf_tower(tower):
         [50,  100,  0,  0,  "ctower3.png",     210,   2000   , 5000],        # cout total : 5950
         [50,   80,  0,  0,  "ctower4.png",     220,   2500   , 6500],        # cout total : 7950
         [50,   50,  0,  0,  "ctower5.png",     250,   3200   , 8000],        # cout total :10450 
-        [50,   20,  0,  0,  "ctower6.png",       0,      0   ,10000],        # cout total :13650
+        [50,   20,  0,  0,  "ctower6.png",       0,      0   , 10000],        # cout total :13650
         ]
-    if TEST:
-        levels = [
-            [50, 1000,  0,  0,  "btower0.png",       1,      0   ,  100],        # cout total : 250
-            [50,  800,  0,  0,  "btower1.png",       1,      0   ,  125],        # cout total : 300
-            [50,  600,  0,  0,  "btower2.png",       1,      0   ,  250],        # cout total : 400
-            [50,  500,  0,  0,  "btower3.png",       1,      0   ,  480],        # cout total : 600
-            [50,  400,  0,  0,  "btower4.png",       1,      0   ,  650],        # cout total : 850
-            [50,  300,  0,  0,  "btower5.png",       1,      0   ,  900],        # cout total : 1200
-            [50,  200,  0,  0,  "btower6.png",       1,      0   , 1200],        # cout total : 1700
-            [50,  180,  0,  0,  "ctower.png",        1,      0   , 2000],        # cout total : 2350
-            [50,  150,  0,  0,  "ctower1.png",       1,      0   , 3000],        # cout total : 3250
-            [50,  120,  0,  0,  "ctower2.png",       1,      0   , 4000],        # cout total : 4450
-            [50,  100,  0,  0,  "ctower3.png",       1,      0   , 5000],        # cout total : 5950
-            [50,   80,  0,  0,  "ctower4.png",       1,      0   , 6500],        # cout total : 7950
-            [50,   50,  0,  0,  "ctower5.png",       1,      0   , 8000],        # cout total :10450 
-            [50,   20,  0,  0,  "ctower6.png",       1,      0   ,10000],        # cout total :13650
-            ]
         
-    def __init__(self,dm,cm,group=None):
-        tower.__init__(self,dm,cm,group)
+    def __init__(self, dm, cm, group=None):
+        if cm.game.TEST:
+            self.levels = [
+                [50, 1000,  0,  0,  "btower0.png",       1,      0   ,  100],        # cout total : 250
+                [50,  800,  0,  0,  "btower1.png",       1,      0   ,  125],        # cout total : 300
+                [50,  600,  0,  0,  "btower2.png",       1,      0   ,  250],        # cout total : 400
+                [50,  500,  0,  0,  "btower3.png",       1,      0   ,  480],        # cout total : 600
+                [50,  400,  0,  0,  "btower4.png",       1,      0   ,  650],        # cout total : 850
+                [50,  300,  0,  0,  "btower5.png",       1,      0   ,  900],        # cout total : 1200
+                [50,  200,  0,  0,  "btower6.png",       1,      0   , 1200],        # cout total : 1700
+                [50,  180,  0,  0,  "ctower.png",        1,      0   , 2000],        # cout total : 2350
+                [50,  150,  0,  0,  "ctower1.png",       1,      0   , 3000],        # cout total : 3250
+                [50,  120,  0,  0,  "ctower2.png",       1,      0   , 4000],        # cout total : 4450
+                [50,  100,  0,  0,  "ctower3.png",       1,      0   , 5000],        # cout total : 5950
+                [50,   80,  0,  0,  "ctower4.png",       1,      0   , 6500],        # cout total : 7950
+                [50,   50,  0,  0,  "ctower5.png",       1,      0   , 8000],        # cout total :10450 
+                [50,   20,  0,  0,  "ctower6.png",       1,      0   , 10000],        # cout total :13650
+                ]
+        super(brouzouf_tower, self).__init__(dm, cm, group)
         self.init = True
         self.dernier_brouzouf_genre = 0
        
     def update(self):
-        if not hasattr(self,"init"):
+        if not hasattr(self, "init"):
             return
         if self.current_construction:
             self.continue_current_build()
@@ -223,18 +272,12 @@ class brouzouf_tower(tower):
             self.dernier_brouzouf_genre = now
             game.castle.modify_money(2)
        
-class badguy(pygame.sprite.Sprite):
+class badguy(games.Sprite, Selectable):
     """ The badguy class describe every badguy in the game """
 
-    selectable = True
-    def __init__(self,dm,cm, group = None):
-        super(badguy, self).__init__(group)
-        self.image = pygame.Surface((16,16))
-        self.transparent = (255,0,255)
-        self.image.set_colorkey(self.transparent)
-        self.color = (50,50,50)
-        self.rect = self.image.get_rect()
-        self.image_save = self.image.copy()
+    def __init__(self, dm, cm):
+        self.transparent = (255, 0, 255)
+        self.color = (50, 50, 50)
         self.dm        = dm        # display manager
         self.cm        = cm        # control manager
         self.life    = 0        # life
@@ -243,125 +286,132 @@ class badguy(pygame.sprite.Sprite):
         self.special = None
         self.last_move = 0
         self.type    = 0    # type of badguy
-        self.coord    = (0,0)        # where the badguy is
-        self.visual_coord = [0,0]
-        self.obj    =   [0,0]        # coord this badguy wants to reach
-        #self.path = None			# the AStar path
+        self.coord    = (0, 0)        # where the badguy is
+        self.visual_coord = [0, 0]
+        self.obj    =   [0, 0]        # coord this badguy wants to reach
+        self.path = None            # the astar path
         self.next_step = None
         self.size   = 10            # withiin this range, the badguy is hit by bullets
         self.win        = False         # will be true when will reach the objective
         self.isobstacle = False         # badguys can go through themselves
         self.blocked = False
         self.starting = True
-        self.selected = False
-        self.kamikaze = False		# if kamikaze is True, the badguy will explode and destroy every tower around him
+        self.kamikaze = False        # if kamikaze is True, the badguy will explode and _destroy every tower around him
+        self.kamidistance = 90
         self.last_good_step = 0
         self.starting_coord = None
         self.birth = pygame.time.get_ticks()
+        self.selected = False
+        self.image = self._create_surface()
+        self.rect = self.image.get_rect()
+        self.image_save = self.image.copy()
+        super(badguy, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
         self.draw()
         self.init = True
-        
-    def draw(self):
+
+    def _create_surface(self):
+        self.image = pygame.Surface((16,16))
         self.image.fill(self.transparent)
+        self.image.set_colorkey(self.transparent, RLEACCEL)
         if self.selected:
-            pygame.draw.circle(self.image,(255,0,0),(8,8),8,0)
+            pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 8, 0)
+        else:
+            pygame.draw.circle(self.image, (0, 0, 0), (8, 8), 8, 0)
         #color = pygame.color.multiply(self.color,  ( abs(self.life * 255) / (self.full_life + 1) ) )
         color = self.color
-        pygame.draw.circle(self.image,color,(8,8),6,0)
+        pygame.draw.circle(self.image, color, (8, 8), 6, 0)
         if self.special == "kamikaze":
-            pygame.draw.circle(self.image,(255,0,0),(8,8),3,0)
+            pygame.draw.circle(self.image, (255, 0, 0), (8, 8), 3, 0)
         elif self.special == "para":
-            pygame.draw.circle(self.image,(0,0,0),(8,8),3,0)
-            
+            pygame.draw.circle(self.image, (0, 0, 0), (8, 8), 3, 0)
+        return self.image.convert()
+        
+    def draw(self):
+        self.replace_image(self._create_surface())
+        self.move_to(self.visual_coord)
 
     def explode(self):
-        distance = 9999
+        distance = self.kamidistance
         tower = None
         for t in self.cm.game.towers:
-            if not isinstance(t,castle_tower) and not isinstance(t,brouzouf_tower):
+            if not isinstance(t, castle_tower) and not isinstance(t, brouzouf_tower):
                 t_distance = ((self.visual_coord[0] - t.visual_coord[0])**2.0 + (self.visual_coord[1] - t.visual_coord[1])**2.0)**(1.0/2.0)
                 if t_distance < distance:
                     tower = t
                     distance = t_distance
         if tower:
-            tower.destroy()
-            #self.cm.game.calcul.starting_path = None
+            tower._destroy()
             self.kamikaze = False
-        self.destroy()
+            self._destroy()
+        else:
+            rnd_tower = random.choice(self.cm.game.towers) 
+            self.obj = [rnd_tower.coord[0], rnd_tower.coord[1]]
         
     def find_path(self):
-        calcul = self.cm.game.calcul
-        #print calcul.result
-        #print self.coord
-        if not calcul.result:
-            print "calcul pas pret"
+        if not self.path:
+            self.path = self.cm.game.astar(self.coord[0], self.coord[1])
+            if not self.path:
+                self.kamikaze = True
+                self.explode()
+                return
+        if self.wincheck():
             return
-        if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
-            self.win = True
-            return
-        if not calcul.result.has_key(self.coord):
-            print "kami"
-            self.kamikaze = True
-            return
-        nstep = calcul.result[self.coord]
-        #print nstep
-        self.next_step = nstep[0] + (nstep[1] * self.cm.game.mapw)
         self.blocked = False
         self.starting = False
-        #self.next_step = self.path.pop(0)
+        self.next_step = self.path.pop(0)
 
     def update(self):
-        if not hasattr(self,"init"):
-            #print "pas init"
+        if not hasattr(self, "init"):
             return
         self.draw()
         if self.kamikaze:
-            #print "kamikaze"
             self.explode()
-        #print "updateme",self.coord
+            return
         if self.life <= 0:
-            #print "die"
-            #print "i die"
-            self.cm.post(["badguy_die",self])
+            self.cm.post(["badguy_die", self])
             if self.special == "kamikaze":
                 self.explode()
             else:
-                self.destroy()
+                self._destroy()
             return
         if self.blocked or not self.next_step:
-            #print "pas de path"
+            self.path = None
             self.find_path()
             return
-        if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
-            print "win"
-            self.win = True
-            self.cm.game.castle.modify_life(-1)
-            if not self.cm.game.single_player:
-                self.cm.game.nm.send(":earn_money 1.5 *level:")
-            self.dm.update_bb()
-            self.destroy()
+        if self.wincheck():
             return
-        #print "follow"
         self.follow_astar ()
 
+    def wincheck(self):
+        if self.coord[0] == self.obj[0] and self.coord[1] == self.obj[1]:
+            self._win()
+            return True
+        return False
+
+    def _win(self):
+        self.win = True
+        self.cm.game.castle.modify_life(-1)
+        if not self.cm.game.single_player:
+            self.cm.game.nm.send(":earn_money 1.5 *level:")
+        self.dm.update_bb()
+        self._destroy()
+
     def follow_astar(self):
-        #print self,"next step",self.next_step
-	self.move_to_next_step()
+        self.move_to_next_step()
         if self.visual_coord[0] / 10.0 == self.next_step%80 and self.visual_coord[1] / 10.0 == self.next_step/80:
-		self.coord = (self.next_step%80,self.next_step/80)
-		self.visual_coord = [self.coord[0]*10, self.coord[1]*10]
-                self.last_good_step = self.next_step
-                #self.next_step = self.path.pop(0)
-                self.find_path()
-                    #print "pop",len(self.path)
+            self.coord = (self.next_step%80, self.next_step/80)
+            self.visual_coord = [self.coord[0]*10, self.coord[1]*10]
+            self.last_good_step = self.next_step
+            #self.next_step = self.path.pop(0)
+            if self.wincheck():
+                return
+            self.find_path()
 
     def move_to_next_step(self):
-        #print "move_to_next_step"
         if self.blocked or self.starting:
             return
         if self.cm.game.mapdata[self.next_step] == -1:
-            #self.cm.game.calcul.known_paths[self.next_step%80][self.next_step/80] = None
-            #self.blocked = True
+            self.path = None
             self.find_path()
             return
         self.blocked = False
@@ -380,16 +430,16 @@ class badguy(pygame.sprite.Sprite):
         self.visual_coord [0] += x_move
         self.visual_coord [1] += y_move
         self.rect.center = (self.visual_coord[0], self.visual_coord[1])
-        self.dm.need_update = True
     
-    def destroy(self):
+    def _destroy(self):
         if self in self.cm.game.badguys:
             self.cm.game.badguys.remove(self)
         self.kill()
-        self.dm.need_update = True
+        if self.selected:
+            self.cm.game.dm.update_bb(message = False)
 
     def get_visual_coord(self):
-	return [self.visual_coord[0] + 5, self.visual_coord[1] + 5]
+        return [self.visual_coord[0] + 5, self.visual_coord[1] + 5]
         
     def get_info(self):
         string = "Mechant :\nVie : "+str(self.life)+"\nVitesse : "+str(self.speed)+"\nType : "+str(self.type)
@@ -397,16 +447,15 @@ class badguy(pygame.sprite.Sprite):
     
 #class badguy_sprite(pygame.sprite.Sprite):
     #def __init__ (self, stuff, group = None):
-        #pygame.sprite.Sprite.__init__(self,group)
+        #pygame.sprite.Sprite.__init__(self, group)
         #self.image = pygame.image.load(DATAPATH + "badguy.png").convert_alpha()
         #self.image_save = self.image.copy()
         #self.rect = self.image.get_rect()
 
-class bullet(pygame.sprite.Sprite):
+class bullet(games.Sprite):
     """ The bullet class represents any bullet fired by a tower """
-    def __init__(self,dm,tower,target,group = None):
+    def __init__(self, dm, tower, target, group = None):
         from pygame_dm import DATAPATH
-        super(bullet, self).__init__(group)
         self.image = pygame.image.load(DATAPATH + "bullet.png").convert_alpha()
         self.image_save = self.image.copy()
         self.rect = self.image.get_rect()
@@ -419,13 +468,19 @@ class bullet(pygame.sprite.Sprite):
         self.tower  =   tower   # what tower fired me ?
         self.target =   target  # what badguy will I shoot ?
         self.alive = True
+        super(bullet, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
+        self.draw()
         self.init = True
 
+    def draw(self):
+        self.replace_image(self.image)
+        self.move_to(self.visual_coord)
+
     def update(self):
-        if not hasattr(self,"init"):
+        if not hasattr(self, "init"):
             return
         if not self.alive:
-            self.destroy()
+            self._destroy()
         distance = ((self.target.visual_coord[0] - self.visual_coord[0])**2.0 + (self.target.visual_coord[1] - self.visual_coord[1])**2.0)**(1.0/2.0)
         if distance > self.target.size:
             self.move ()
@@ -433,7 +488,7 @@ class bullet(pygame.sprite.Sprite):
             self.target.life -= self.power
             if self.target.selected:
                 self.dm.update_bb(self.target.get_info())
-            self.destroy()
+            self._destroy()
     
     def move(self):
         x_dir = self.target.visual_coord [0] - self.visual_coord [0]
@@ -450,13 +505,38 @@ class bullet(pygame.sprite.Sprite):
             y_move = speed * ( y_dir > 0) - speed * ( y_dir < 0)
         self.visual_coord [0] += x_move
         self.visual_coord [1] += y_move
-        self.rect.center = (self.visual_coord[0], self.visual_coord[1])
-        self.dm.need_update = True
+        self.draw()
 
-    def destroy(self):
+    def _destroy(self):
         self.alive = False
         self.kill()
-        self.dm.need_update = True
 
     def get_visual_coord(self):
-	return self.visual_coord[:]
+        return self.visual_coord[:]
+
+class gauge(games.Sprite):
+    def __init__(self, screen, init_value, final_value, sprite_or_center):
+        self.screen = screen
+        if isinstance(sprite_or_center, games.Object):
+            width = sprite_or_center._rect.width * 90/100
+            center = sprite_or_center._rect.center
+        else:
+            width = 30
+            center = sprite_or_center
+        self.image = pygame.Surface((width, 4))
+        self.image.fill((0, 0, 0))
+
+        super(gauge, self).__init__(self.screen, center[0], center[1], self.image)
+        
+        self.move_to(center)
+        self.ini_val = init_value
+        self.fin_val = final_value
+        self.update_gauge(init_value)
+        
+    def update_gauge(self, value):
+        w = (value - self.ini_val) * self._rect.width / (self.fin_val - self.ini_val)
+        rect = pygame.Rect((1, 1), (w, 2))
+        self.image.fill((0, 0, 0))
+        self.image.fill((255, 0, 0), rect)
+        self.replace_image(self.image)
+        

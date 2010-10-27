@@ -4,6 +4,8 @@ import pygame.font
 from pygame.locals import *
 import objects
 
+from livewires import games
+
 PATHNAME=os.path.dirname(sys.argv[0])
 FULLPATH=os.path.abspath(PATHNAME)
 DATAPATH=os.path.join(FULLPATH,"data/")
@@ -44,138 +46,6 @@ class bullet_sprite(pygame.sprite.Sprite):
     def __init__(self,bullet,group = None):
         pygame.sprite.Sprite.__init__(self,group)
         self.model = bullet
-        
-class bouton(pygame.sprite.Sprite):
-    
-    def __init__(self, dm, event_to_send, tlcorner, image_file, group = None):
-        pygame.sprite.Sprite.__init__(self,group)
-        self.dm = dm
-        self.text = ""
-        self.event = event_to_send
-        self.img = pygame.image.load(DATAPATH + image_file).convert_alpha()
-        self.tlcorner = tlcorner
-        self.image =  pygame.Surface((100,120))
-        self.rect = self.image.get_rect()
-        self.update_text(self.text)
-        
-    def update_img(self,img):
-        self.img = pygame.image.load(DATAPATH + img).convert_alpha()
-        
-    def update_event(self,event):
-        self.event = event
-        
-    def update_text(self,text):
-        self.text = text
-        self.image = pygame.Surface((100,120))
-        self.rect = self.image.get_rect()
-        self.rect.left = self.tlcorner[0]
-        self.rect.top = self.tlcorner[1]
-        self.image.blit(self.img,(0,0))
-        self.font = pygame.font.Font(os.path.join(DATAPATH,"VeraBd.ttf"),12)
-        lines = self.text.split("\n")
-        h = 72
-        for line in lines:
-            (width,height) = self.font.size(line)
-            decal = (self.rect.width - width) / 2
-            text = self.font.render(line,1,(255,255,255))
-            self.image.blit(text,(decal,h))
-            h+=height
-        self.dm.need_update = True
-        
-class bouton_menu:
-    # (35,684)(104,684)
-    y = 0
-    
-    def __init__(self, group = None, dm = None, parent = None):
-        self.boutons = {}
-        self.boutons_by_num = []
-        self.dm = dm
-        self.group = group
-        self.parent_menu = parent
-    
-    def add_bouton(self,nom,bouton_img,event):
-        x = 80 + 100 * len(self.boutons)
-        bt = bouton(self.dm,event,(x,self.y),bouton_img,self.group)
-        self.boutons [nom] = bt
-        self.boutons_by_num.append(bt)
-        return bt
-        
-    def clic(self,event):
-        pos = event[1][1]
-        for bt_name in self.boutons:
-            bt = self.boutons[bt_name]
-            if bt.rect.collidepoint(pos):
-                return (bt.event,bt)
-            
-class build_menu(bouton_menu):
-    y = 610
-    def __init__(self,group = None, dm = None, parent = None):
-        bouton_menu.__init__(self,group,dm,parent)
-        bt = self.add_bouton("bg_factory","bouton_B.png","build_badguy_factory")
-        bt = self.add_bouton("labo","bouton_L.png","build_laboratory")
-        bt = self.add_bouton("build_castle_defense","bouton_tw.png","build_castle_defense")
-        bt = self.add_bouton("build_brouzouf_tower","bd_brouzouf_tw.png","build_brouzouf_tower")
-
-class research_menu(bouton_menu):
-    y = 610
-    def __init__(self,group = None, dm = None, parent = None):
-        bouton_menu.__init__(self,group,dm,parent)
-        bt = self.add_bouton("research_defensive_castle","bouton_tw.png","research_defensive_castle")
-        bt = self.add_bouton("research_special","bouton_S.png","research_special")
-        bt = self.add_bouton("research_entry2","bouton_S.png","research_entry2")
-        bt = self.add_bouton("research_entry3","bouton_S.png","research_entry3")
-        bt = self.add_bouton("research_entry4","bouton_S.png","research_entry4")
-        #self.dm.bulle.register(bt,self.dm.cm.game.castle.infobulle("defensive_castle"))
-
-class upgrades_menu(bouton_menu):
-    y = 610
-    def __init__(self,group = None, dm = None, parent = None):
-        bouton_menu.__init__(self,group,dm,parent)
-        bt = self.add_bouton("upgrade_bgspeed","bouton_S.png","upgrade_bgspeed")
-        bt = self.add_bouton("upgrade_bglife","bouton_L.png","upgrade_bglife")
-        bt = self.add_bouton("upgrade_bgbdspeed","bouton_B.png","upgrade_bgbdspeed")
-        #bt = self.add_bouton("sell_badguys","brouzouf.png","sell_badguys")
-        
-class special_menu(bouton_menu):
-    y = 610
-    def __init__(self,group = None, dm = None, parent = None):
-        bouton_menu.__init__(self,group,dm,parent)
-        bt = self.add_bouton("special_wave_kamikaze","bouton_K.png","special_wave_kamikaze")
-        bt = self.add_bouton("special_wave_para","bouton_P.png","special_wave_para")
-        
-class main_menu_bouton(bouton):
-    
-    def __init__(self, dm, event_to_send, tlcorner, image_file, group = None):
-    #self, dm, event_to_send, tlcorner, image_file, group = None
-        bouton.__init__(self,dm,event_to_send,tlcorner,image_file,group)
-        self.image =  self.img
-        self.rect = self.image.get_rect()
-        self.rect.left = self.tlcorner[0]
-        self.rect.top  = self.tlcorner[1]
-        
-    def update_img(self,img):
-        self.img = pygame.image.load(DATAPATH + img).convert_alpha()
-        
-    def update_event(self,event):
-        self.event = event
-        
-class main_menu(bouton_menu):
-    y = 600
-    def __init__(self,group = None, dm = None, parent = None):
-        bouton_menu.__init__(self,group,dm,parent)
-        bt = self.add_bouton("construire","bmm_construire.png","construire")
-        bt = self.add_bouton("rechercher","bmm_rechercher.png","rechercher")
-        bt = self.add_bouton("ameliorer","bmm_ameliorer.png","ameliorer")
-        bt = self.add_bouton("specialiser","bmm_special.png","specialiser")
-        
-    def add_bouton(self,nom,bouton_img,event):
-        x = 1
-        y = self.y + (len(self.boutons) + 1) * 30
-        bt = main_menu_bouton(self.dm,event,(x,y),bouton_img,self.group)
-        self.boutons [nom] = bt
-        self.boutons_by_num.append(bt)
-        return bt
-
 
 class mouse_cursor:
     #pygame.mouse.set_cursor(*pygame.cursors.arrow)
@@ -220,30 +90,6 @@ class blackboard(pygame.sprite.Sprite):
             self.image.blit(test_text,(10,h))
             h += height
             
-class gauge(pygame.sprite.Sprite):
-    def __init__(self,init_value,final_value,sprite_or_center,group = None):
-        pygame.sprite.Sprite.__init__(self,group)
-        if isinstance(sprite_or_center,pygame.sprite.Sprite):
-            width = sprite_or_center.rect.width * 90/100
-            center = sprite_or_center.rect.center
-        else:
-            width = 30
-            center = sprite_or_center
-        self.image = pygame.Surface((width, 4))
-        self.rect= self.image.get_rect()
-        
-        self.rect.center = center
-        self.image.fill((0,0,0))
-        self.ini_val = init_value
-        self.fin_val = final_value
-        self.update_gauge(init_value)
-        
-    def update_gauge(self,value):
-        w = (value - self.ini_val) * self.rect.width / (self.fin_val - self.ini_val)
-        rect = pygame.Rect((1,1),(w,2))
-        self.image.fill((0,0,0))
-        self.image.fill((255,0,0), rect)
-        
 class infobulle(pygame.sprite.Sprite):
     def __init__(self,group = None):
         pygame.sprite.Sprite.__init__(self,group)

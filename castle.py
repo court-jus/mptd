@@ -1,11 +1,10 @@
 # castle
 
 import pygame.time
+import random
 
 MAX_LIFE_MULT = 1.5
 
-TEST = True
-            
 class building(object):
     
     name = "Building"
@@ -29,9 +28,9 @@ class badguy_factory(building):
     name = "Usine"
     bt_name = "bg_factory"
     upgrades = {
-        "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.36 , 0.45 ],
-        "life"        : [20   , 40   , 75   , 100  , 200  , 300  , 400  , 600  , 800  , 950  , 1200 ],
-        "build_speed" : [10   , 8    , 5    , 2    , 1    , 0.9  , 0.8  , 0.6  , 0.5  , 0.4  , 0.2  ],
+        "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.32 , 0.35 , 0.37 , 0.4  , 0.45 ],
+        "life"        : [10   , 20   , 40   , 50   , 75   , 100  , 200  , 300  , 400  , 500  , 600  , 800  , 950  , 1200 ],
+        "build_speed" : [3    , 2    , 1.5  , 1.0  , 0.9  , 0.8  , 0.7  , 0.6  , 0.5  , 0.4  , 0.3  , 0.2  , 0.1  , 0.05 ],
         }
         
     upgrades_names = {
@@ -46,15 +45,20 @@ class badguy_factory(building):
         "para" :     [ 50,  2 ],
         "kamikaze" : [ 100, 5 ],
         }
-        
-    if TEST:
-        waves = {
-            "para" :     [ 0,  0.1 ],
-            "kamikaze" : [ 0, 0.11 ],
-            }
+    auto_upgrade_frequency = 20 # upgrade every 20 level (kill) 
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        if cm.game.TEST:
+            self.upgrades = {
+                "speed"       : [0.05 , 0.06 , 0.08 , 0.10 , 0.13 , 0.15 , 0.19 , 0.25 , 0.30 , 0.32 , 0.35 , 0.37 , 0.4  , 0.45 ],
+                "life"        : [50   , 20   , 40   , 50   , 75   , 100  , 200  , 300  , 400  , 500  , 600  , 800  , 950  , 1200 ],
+                "build_speed" : [0.5 for a in range(10)],
+                }
+            self.waves = {
+                "para" :     [ 0,  0.1 ],
+                "kamikaze" : [ 0, 0.11 ],
+                }
+        super(badguy_factory, self).__init__(castle,cm)
         self.castle = castle
         self.begin_build = None
         self.end_upgrade = None
@@ -73,6 +77,9 @@ class badguy_factory(building):
         self.building_time = self.upgrades["build_speed"][self.build_speed_level] * 1000
         self.cm.game.dm.upgrades_menu_available = True
         self.upgrades_boutons = None
+        self.last_cpu_upgrade = None
+        if self.cm.game.single_player:
+            self.last_cpu_upgrade = 0
         self.update_boutons_text()
         
     def prepare_wave(self,wave_type,gauge_stuff):
@@ -110,6 +117,8 @@ class badguy_factory(building):
             self.gauge.kill()
             
     def update_boutons_text(self):
+        if not self.cm.game.dm.upgrades_menu:
+            return
         if not self.upgrades_boutons:
             self.upgrades_boutons = {
                 "speed" : self.cm.game.dm.upgrades_menu.boutons["upgrade_bgspeed"],
@@ -233,6 +242,16 @@ class badguy_factory(building):
         self.continue_current_build()
         self.continue_current_upgrade()
         self.continue_current_wave()
+        if self.last_cpu_upgrade is not None and self.last_cpu_upgrade + self.auto_upgrade_frequency < self.cm.game.level:
+            possible_upgrades = []
+            if self.build_speed_level < self.upgrades['build_speed']:
+                possible_upgrades.append(self.upgrade_bgbdspeed)
+            if self.speed_level < self.upgrades['speed']:
+                possible_upgrades.append(self.upgrade_bgspeed)
+            if self.life_level < self.upgrades['life']:
+                possible_upgrades.append(self.upgrade_bglife)
+            random.choice(possible_upgrades)()
+            self.last_cpu_upgrade += self.auto_upgrade_frequency
     
     def notify (self,event):
         if event [0] == "upgrade_bgspeed":
@@ -258,7 +277,7 @@ class castle_defense(building):
     name = "Donjon"
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(castle_defense, self).__init__(castle,cm)
         self.level = 0
         self.cm.post(["castle_defense_built",self])
         
@@ -268,7 +287,7 @@ class brouzouf_tower_building(building):
     name = "Brouzouf Tw"
     
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        super(brouzouf_tower_building, self).__init__(castle, cm)
         self.level = 0
         self.cm.post(["brouzouf_tower_building_built",self])
         
@@ -287,14 +306,6 @@ class laboratory(building):
         "entry4"          : [6000,   ["entry3"], [], 120 ],
         }
     
-    if TEST:
-        technos = {
-            "defensive_castle": [0,    [], [], 1  ],
-            "special"         : [0,    [], [castle_defense], 1],
-            "entry2"          : [0,   [], [], 1 ],
-            "entry3"          : [0,   ["entry2"], [], 1 ],
-            "entry4"          : [0,   ["entry3"], [], 1 ],
-            }
         
     technos_names = {
         "defensive_castle" : "Catapulte",
@@ -308,7 +319,15 @@ class laboratory(building):
     bt_name = "labo"
         
     def __init__(self,castle,cm):
-        building.__init__(self,castle,cm)
+        if cm.game.TEST:
+            self.technos = {
+                "defensive_castle": [0,    [], [], 1  ],
+                "special"         : [0,    [], [castle_defense], 1],
+                "entry2"          : [0,   [], [], 1 ],
+                "entry3"          : [0,   ["entry2"], [], 1 ],
+                "entry4"          : [0,   ["entry3"], [], 1 ],
+                }
+        super(laboratory, self).__init__(castle,cm)
         self.level = 0
         self.castle = castle
         self.begin_build = None
@@ -319,10 +338,11 @@ class laboratory(building):
         
     def update_boutons_text(self,recurse = True):
         self.cm.game.dm.research_menu.boutons["research_defensive_castle"].update_text(self.cm.game.make_text("research","defensive_castle"))
-        self.cm.game.dm.research_menu.boutons["research_special"].update_text(self.cm.game.make_text("research","special"))
-        self.cm.game.dm.research_menu.boutons["research_entry2"].update_text(self.cm.game.make_text("research","entry2"))
-        self.cm.game.dm.research_menu.boutons["research_entry3"].update_text(self.cm.game.make_text("research","entry3"))
-        self.cm.game.dm.research_menu.boutons["research_entry4"].update_text(self.cm.game.make_text("research","entry4"))
+        if not self.cm.game.single_player:
+            self.cm.game.dm.research_menu.boutons["research_special"].update_text(self.cm.game.make_text("research","special"))
+            self.cm.game.dm.research_menu.boutons["research_entry2"].update_text(self.cm.game.make_text("research","entry2"))
+            self.cm.game.dm.research_menu.boutons["research_entry3"].update_text(self.cm.game.make_text("research","entry3"))
+            self.cm.game.dm.research_menu.boutons["research_entry4"].update_text(self.cm.game.make_text("research","entry4"))
         if recurse:
             self.castle.update_boutons_text(False)
 
@@ -388,7 +408,7 @@ class laboratory(building):
         if self.begin_build:
             self.continue_current_build()
             
-class castle:
+class castle(object):
     
     #   "name" : [ price, time, needs (build), needs (science), class ,"hr name"],
     
@@ -399,24 +419,22 @@ class castle:
         "brouzouf_tower" :  [250, 15, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
         }
         
-    if TEST:
-        known_buildings = {
-            "badguy_factory" :  [0, 1, [], [], badguy_factory ,"Usine"],
-            "laboratory"     :  [0, 1, [badguy_factory], [], laboratory ,"Labo"],
-            "castle_defense" :  [0, 1, [], ["defensive_castle"], castle_defense ,"Donjon"],
-            "brouzouf_tower" :  [0, 1, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
-            }
-            
-    def __init__(self,cm, mode_solo = None):
+    def __init__(self,cm):
+        if cm.game.TEST:
+            self.known_buildings = {
+                "badguy_factory" :  [0, 1, [], [], badguy_factory ,"Usine"],
+                "laboratory"     :  [0, 1, [badguy_factory], [], laboratory ,"Labo"],
+                "castle_defense" :  [0, 1, [], ["defensive_castle"], castle_defense ,"Donjon"],
+                "brouzouf_tower" :  [0, 1, [badguy_factory,laboratory], [], brouzouf_tower_building ,"Brouzouf tw"],
+                }
         self.cm = cm
-        #self.dm = self.cm.game.dm
         self.cm.register(self)
         self.lifes = 100
-        self.money = 2500
+        self.money = 800
         self.gauge = None
         
         self.buildings = []
-        if mode_solo:
+        if cm.game.single_player:
             self.buildings.append(badguy_factory(self, self.cm))
         self.update_boutons_text()
         
@@ -424,8 +442,11 @@ class castle:
         self.begin_build = None # when did I begin the build ?
     
     def update_boutons_text(self,recurse = True):
+        if not self.cm.game.dm.build_menu:
+            return
         self.cm.game.dm.build_menu.boutons["labo"].update_text(self.cm.game.make_text("building","laboratory"))
-        self.cm.game.dm.build_menu.boutons["bg_factory"].update_text(self.cm.game.make_text("building","badguy_factory"))
+        if not self.cm.game.single_player:
+            self.cm.game.dm.build_menu.boutons["bg_factory"].update_text(self.cm.game.make_text("building","badguy_factory"))
         self.cm.game.dm.build_menu.boutons["build_castle_defense"].update_text(self.cm.game.make_text("building","castle_defense"))
         self.cm.game.dm.build_menu.boutons["build_brouzouf_tower"].update_text(self.cm.game.make_text("building","brouzouf_tower"))
         l = self.has_building(laboratory)
