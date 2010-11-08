@@ -35,6 +35,7 @@ class MyProtocol(protocol.Protocol):
         for client in clients:
             client.transport.write("%s said %s\n" % (self.clientnum, data.rstrip()))
         if data.strip() == 'quit':
+            print "hum client", self.clientnum, "disconnecting"
             self.transport.loseConnection()
             
     def connectionLost(self, reason):
@@ -43,7 +44,7 @@ class MyProtocol(protocol.Protocol):
         '''
         global clients
         clients.remove(self)
-        print 'Client quit', self.clientnum
+        print 'Client has quitted', self.clientnum
 
 class MyFactory(protocol.Factory):
     protocol = MyProtocol

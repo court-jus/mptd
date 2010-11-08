@@ -39,7 +39,52 @@ class MptdScreen(games.Screen):
         
         self.selected_stuff = None
 
+        self._exit = 0
         self.tick_listeners = []
+
+    def mainloop (self, fps = 50):
+        """
+        Run the pygame main loop. This will animate the objects on the
+        screen and call their tick methods every tick.
+
+        fps -- target frame rate
+
+        Will be called by twisted reactor
+        """
+
+        if self._exit:
+            # Throw away any pending events.
+            pygame.event.get()
+            return
+        #self._wait_frame (fps)
+
+        for object in self._objects:
+            if not object._static:
+                object._erase ()
+                object._dirty = 1
+
+        # Take a copy of the _objects list as it may get changed in place.
+        for object in self._objects [:]:
+            if object._tickable: object._tick ()
+
+        self.tick ()
+
+        if games.Screen.got_statics:
+            for object in self._objects:
+                if not object._static:
+                    for o in object.overlapping_objects ():
+                        if o._static and not o._dirty:
+                            o._erase ()
+                            o._dirty = 1
+
+        for object in self._objects:
+            if object._dirty:
+                object._draw ()
+                object._dirty = 0
+
+        self._update_display()
+
+        self.handle_all_events()
 
     def select_menu(self, new_menu):
         #print "sleect menu",new_menu
@@ -56,20 +101,19 @@ class MptdScreen(games.Screen):
             else:
                 listener.update()
 
-    def handle_events (self):
+    def handle_all_events (self):
         if not self.model:
             return
-        return self.model.cm.handle_pygame_events()
-        events = pygame.event.get ()
-        for event in events:
-            if event.type == QUIT:
-                self.quit ()
-            elif event.type == KEYDOWN:
-                self.keypress (event.key)
-            elif event.type == MOUSEBUTTONUP:
-                self.mouse_up (event.pos, event.button-1)
-            elif event.type == MOUSEBUTTONDOWN:
-                self.mouse_down (event.pos, event.button-1)
+        if not self in self.model.cm.emitters:
+            self.model.cm.register_emitter(self)
+        return self.model.cm.handle_events()
+
+    def handle_events(self):
+        # grab pygame events and send them to the control manager
+        pgevents = []
+        for pgevent in pygame.event.get():
+            pgevents.append(pgevent)
+        return pgevents
 
     def update_bb(self, message = None):
         self.blackboard.update_bb(message)
@@ -114,6 +158,8 @@ class MptdScreen(games.Screen):
             pygame.display.toggle_fullscreen()
         elif event [0] == "badguy_count_update":
             self.update_bb()
+        elif event [0] == "quit_game":
+            self._exit = 1
         elif event [0] == "level_up":
             self.update_bb()
         elif event [0] == "clic":

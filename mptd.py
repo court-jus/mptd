@@ -199,10 +199,9 @@ class mptd:
                 pass
         elif event [0] == "quit_game":
             self.running = False
-            if self.nm:
-                self.nm.stop()
             if self.dm:
-                self.dm.quit()
+                pass
+                #self.dm.quit()
         elif event [0] == "clic":
             if event[1][0] == "TOWER_CREATE":
                 if self.castle.money >= self.current_tower_creation_mode.cost:

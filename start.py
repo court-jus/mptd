@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from lw_dm import MptdScreen
+from network import GameNetwork, ServerFinder
+from twisted.internet import reactor
 from pygame.constants import *
 import os, sys, getopt, shelve
 
@@ -131,12 +133,18 @@ def manage_configuration(argv):
     return None
 
 def main(argv):
-    print "Main using LiveWires package"
-
+    global game
     settings = manage_configuration(argv)
     if settings:
-        s = MptdScreen(settings)
-        s.mainloop()
+        t = reactor.listenUDP(0, ServerFinder())
+        t.write('find', ('224.0.0.1', 9300))
+        game = GameNetwork(settings)
 
-if __name__ == "__main__":
+        # Initialize game looping
+        game.superloop()
+
+        # Launch twisted main loop
+        reactor.run()
+
+if __name__ == '__main__':
     main(sys.argv[1:])
