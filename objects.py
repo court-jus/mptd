@@ -4,6 +4,7 @@ import pygame.image
 import pygame.sprite
 from pygame.locals import RLEACCEL
 import random
+import os
 
 class Selectable(object):
     """Every selectable object should subclass this"""
@@ -40,7 +41,7 @@ class shadow(games.Sprite):
         super(shadow, self).kill()
         self.cm.unregister(self)
 
-class tower(games.Sprite, Selectable):
+class tower(games.Animation, Selectable):
     """ The tower class represents any tower in the game """
     cost = 0
         #life, speed, power, range, image,          upgrade_time, upgrade_price,    sell_income
@@ -58,8 +59,17 @@ class tower(games.Sprite, Selectable):
         from pygame_dm import DATAPATH, TAR_NORMAL
         self.level = 0
         self.selected = False
-        self.image_name  = self.levels[self.level][4]
-        self.image = pygame.image.load(DATAPATH + self.image_name).convert_alpha()
+        image_infos = self.levels[self.level][4]
+        self.nrimage_list = [] # non repeating
+        self.rimage_list = [] # repeating
+        if isinstance(image_infos, dict):
+            # animation
+            self.nrimage_list = [os.path.join(DATAPATH, image_infos.get('folder'), imagename) for imagename in image_infos.get("nrfiles")]
+            self.rimage_list = [os.path.join(DATAPATH, image_infos.get('folder'), imagename) for imagename in image_infos.get("rfiles")]
+        else:
+            self.nrimage_list = [os.path.join(DATAPATH, self.levels[self.level][4]),]
+        self.image_name = self.nrimage_list[0]
+        self.image = pygame.image.load(self.image_name).convert_alpha()
         self.rect = self.image.get_rect()
         self.image_save = self.image.copy()
         self.life   = self.levels[self.level][0]
@@ -76,7 +86,7 @@ class tower(games.Sprite, Selectable):
         self.size   =   3
         self.current_construction = None # upgrade status
         self.end_upgrade = None # when will the upgrade be ready ?
-        super(tower, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.image)
+        super(tower, self).__init__(dm, self.visual_coord[0], self.visual_coord[1], self.nrimage_list, self.rimage_list)
         self.draw()
         self.init = True
 
@@ -170,7 +180,12 @@ class basic_tower(tower):
     type = "Basic"
     
     levels = [
-        [50,    500,     3 ,  5,    "tower.png",   2,             5   , 3   ],        # cout total : 5
+        [50,    40,     30 ,  10,    
+            {"folder":"ctower",
+            "nrfiles":["%03d.png" % i for i in range(1,10)],
+            "rfiles":["%03d.png" % i for i in range(11,13)],
+            },
+            5,           20   ,  120  ],        # cout total : 250
         [50,    400,     6 ,  5,    "tower1.png",   4,            10  , 6   ],        # cout total : 10
         [50,    300,     10,  6,    "tower2.png",   8,            20  , 12   ],        # cout total : 20
         [50,    200,     15,  7,    "tower3.png",   15,           50  , 30   ],        # cout total : 40
@@ -192,7 +207,9 @@ class castle_tower(tower):
     type = "Chateau"
     
     levels = [
-        [50,    40,     30 ,  10,    "ctower.png" ,    5,           20   ,  120  ],        # cout total : 250
+        [50,    40,     30 ,  10,    
+            {"folder":"ctower","files":["%03d.png" % i for i in range(1,13)]},
+            5,           20   ,  120  ],        # cout total : 250
         [50,    35,     60 ,  12,    "ctower1.png",   10,           40   ,  220  ],        # cout total : 270
         [50,    30,     100,  15,    "ctower2.png",   15,           90   ,  280  ],        # cout total : 310
         [50,    25,     150,  20,    "ctower3.png",   20,          120   ,  350  ],        # cout total : 400
@@ -204,7 +221,9 @@ class castle_tower(tower):
     def __init__(self, dm, cm, group=None):
         if cm.game.TEST:
             self.levels = [
-                [50,    40,     300,  10,    "ctower.png" ,    1,            0   ,  120  ],        # cout total : 250
+                [50,    40,     30 ,  10,    
+                    {"folder":"ctower","files":["%03d.png" % i for i in range(1,13)]},
+                    5,           20   ,  120  ],        # cout total : 250
                 [50,    35,     600,  12,    "ctower1.png",    1,            0   ,  220  ],        # cout total : 270
                 [50,    30,    1000,  15,    "ctower2.png",    1,            0   ,  280  ],        # cout total : 310
                 [50,    25,    1500,  20,    "ctower3.png",    1,            0   ,  350  ],        # cout total : 400

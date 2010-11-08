@@ -72,7 +72,7 @@ def main():
     game = GameNetwork()
 
     # Initialize game looping
-    game.superloop()
+    game.superloop(fps = 60)
 
     # Launch twisted main loop
     reactor.run()
